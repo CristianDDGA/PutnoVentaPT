@@ -14,6 +14,7 @@ public class SaleService : ISaleService
     private readonly ICustomerRepository     _customerRepository;
     private readonly IProductRepository       _productRepository;
     private readonly IStockMovementRepository _stockMovementRepository;
+    private readonly IUserRepository          _userRepository;
     private readonly IUnitOfWork              _unitOfWork;
 
     public SaleService(
@@ -21,12 +22,14 @@ public class SaleService : ISaleService
         ICustomerRepository     customerRepository,
         IProductRepository      productRepository,
         IStockMovementRepository stockMovementRepository,
+        IUserRepository         userRepository,
         IUnitOfWork             unitOfWork)
     {
         _saleRepository         = saleRepository;
         _customerRepository     = customerRepository;
         _productRepository      = productRepository;
         _stockMovementRepository = stockMovementRepository;
+        _userRepository         = userRepository;
         _unitOfWork             = unitOfWork;
     }
 
@@ -92,11 +95,18 @@ public class SaleService : ISaleService
             saleDetails.Add(newSaleDetail);
         }
 
+        string? sellerName = null;
+        if (userId.HasValue)
+        {
+            var user = await _userRepository.GetByIdAsync(userId.Value);
+            sellerName = user?.FullName;
+        }
+
         await _unitOfWork.BeginTransactionAsync();
 
         try
         {
-            var newSale   = Sale.Create(createSaleDto.CustomerId, paymentType, saleDetails, userId);
+            var newSale   = Sale.Create(createSaleDto.CustomerId, customer.DocumentNumber, customer.FullName, paymentType, saleDetails, userId, sellerName);
             var savedSale = await _saleRepository.AddAsync(newSale);
 
             foreach (var detail in savedSale.Details)
@@ -174,6 +184,13 @@ public class SaleService : ISaleService
             saleDetails.Add(newSaleDetail);
         }
 
+        string? sellerName = null;
+        if (userId.HasValue)
+        {
+            var user = await _userRepository.GetByIdAsync(userId.Value);
+            sellerName = user?.FullName;
+        }
+
         Sale sale;
 
         if (saleId.HasValue && saleId > 0)
@@ -181,12 +198,12 @@ public class SaleService : ISaleService
             sale = await _saleRepository.GetByIdTrackedAsync(saleId.Value)
                    ?? throw new KeyNotFoundException($"Borrador {saleId.Value} no encontrado.");
 
-            sale.UpdateDraft(createSaleDto.CustomerId, paymentType, saleDetails, userId);
+            sale.UpdateDraft(createSaleDto.CustomerId, customer.DocumentNumber, customer.FullName, paymentType, saleDetails, userId, sellerName);
             await _saleRepository.UpdateAsync(sale);
         }
         else
         {
-            sale = Sale.Create(createSaleDto.CustomerId, paymentType, saleDetails, userId);
+            sale = Sale.Create(createSaleDto.CustomerId, customer.DocumentNumber, customer.FullName, paymentType, saleDetails, userId, sellerName);
             await _saleRepository.AddAsync(sale);
         }
 
@@ -332,12 +349,13 @@ public class SaleService : ISaleService
         {
             SaleId           = sale.SaleId,
             CustomerId       = sale.CustomerId,
-            CustomerName     = sale.Customer?.FullName ?? string.Empty,
-            CustomerDocument = sale.Customer?.DocumentNumber ?? string.Empty,
+            CustomerName     = !string.IsNullOrWhiteSpace(sale.CustomerName) && sale.CustomerName != "N/A" ? sale.CustomerName : (sale.Customer?.FullName ?? string.Empty),
+            CustomerDocument = !string.IsNullOrWhiteSpace(sale.CustomerDocument) && sale.CustomerDocument != "N/A" ? sale.CustomerDocument : (sale.Customer?.DocumentNumber ?? string.Empty),
             CustomerAddress  = sale.Customer?.Address ?? string.Empty,
             CustomerCity     = sale.Customer?.City ?? string.Empty,
             CustomerPhone    = sale.Customer?.Phone ?? string.Empty,
             CustomerEmail    = sale.Customer?.Email ?? string.Empty,
+            SellerName       = !string.IsNullOrWhiteSpace(sale.SellerName) ? sale.SellerName : (sale.User?.FullName ?? string.Empty),
             SaleDate         = sale.SaleDate,
             PaymentType      = sale.PaymentType.ToSpanish(),
             Subtotal         = sale.Subtotal,

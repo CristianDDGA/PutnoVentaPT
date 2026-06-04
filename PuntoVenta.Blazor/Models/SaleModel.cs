@@ -5,6 +5,7 @@ public class SaleModel
     public int                   SaleId       { get; set; }
     public int                   CustomerId   { get; set; }
     public string                CustomerName { get; set; } = string.Empty;
+    public string                SellerName   { get; set; } = string.Empty;
     public DateTime              SaleDate     { get; set; }
     public string                PaymentType  { get; set; } = "Efectivo";
     public decimal               Subtotal     { get; set; }

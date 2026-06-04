@@ -75,6 +75,8 @@ public class PdfService : IPdfService
                         row.RelativeItem(4).Column(right => 
                         {
                             right.Item().Text(t => { t.Span("Método de Pago: ").Bold(); t.Span(saleDto.PaymentType.ToUpper()); });
+                            if (!string.IsNullOrEmpty(saleDto.SellerName))
+                                right.Item().PaddingTop(2).Text(t => { t.Span("Vendedor: ").Bold(); t.Span(saleDto.SellerName); });
                         });
                     });
 

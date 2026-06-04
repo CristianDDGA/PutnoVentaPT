@@ -264,6 +264,14 @@
                         <span class="product-info-key">Fecha:</span>
                         <span class="product-info-val font-mono">@_selectedSale.SaleDate.ToString("dd/MM/yyyy HH:mm")</span>
                     </div>
+                    @if (!string.IsNullOrEmpty(_selectedSale.SellerName))
+                    {
+                        <div class="product-info-separator"></div>
+                        <div class="product-info-item">
+                            <span class="product-info-key">Vendedor:</span>
+                            <span class="product-info-val">@_selectedSale.SellerName</span>
+                        </div>
+                    }
                 </div>
 
                 <!-- Detail lines -->

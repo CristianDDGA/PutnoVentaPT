@@ -10,6 +10,7 @@ public class SaleDto
     public string         CustomerCity     { get; set; } = string.Empty;
     public string         CustomerPhone    { get; set; } = string.Empty;
     public string         CustomerEmail    { get; set; } = string.Empty;
+    public string         SellerName       { get; set; } = string.Empty;
     public DateTime       SaleDate    { get; set; }
     public string         PaymentType { get; set; } = string.Empty;
     public decimal        Subtotal    { get; set; }

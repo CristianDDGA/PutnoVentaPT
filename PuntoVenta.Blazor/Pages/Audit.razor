@@ -1,0 +1,247 @@
+@page "/auditoria"
+@attribute [Authorize]
+@using PuntoVenta.Blazor.Models
+@using PuntoVenta.Blazor.Services
+@inject SaleApiService SaleApiService
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Auditoría — Punto de Venta</PageTitle>
+
+<div style="max-width: 800px; margin: 40px auto; font-family: sans-serif; background: #fff; padding: 30px; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+
+    <div style="border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 25px;">
+        <h1 style="margin: 0; font-size: 24px; color: #222;">Módulo de Auditoría de Ventas</h1>
+        <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">Herramienta exclusiva para consulta de información inmutable.</p>
+    </div>
+
+    <!-- ══ SEARCH BAR ══════════════════════════════════════════════════ -->
+    <div style="background: #f9f9f9; padding: 20px; border: 1px solid #e0e0e0; margin-bottom: 30px;">
+        <label style="display: block; font-weight: bold; margin-bottom: 8px; color: #333;">Ingrese el Número de Factura:</label>
+        <div style="display: flex; gap: 10px;">
+            <input type="number" 
+                   style="flex: 1; padding: 10px; border: 1px solid #ccc; font-size: 16px;" 
+                   placeholder="Ej: 1001"
+                   @bind="_searchSaleId"
+                   @bind:event="oninput"
+                   @onkeydown="HandleKeyDown" />
+                   
+            <button style="padding: 10px 20px; background: #333; color: #fff; border: none; font-weight: bold; cursor: pointer; font-size: 16px;"
+                    @onclick="SearchSaleAsync" disabled="@_isLoading">
+                @if (_isLoading)
+                {
+                    <span>Consultando...</span>
+                }
+                else
+                {
+                    <span>Buscar</span>
+                }
+            </button>
+        </div>
+        
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <div style="margin-top: 15px; padding: 10px; background: #ffebee; color: #c62828; border-left: 4px solid #c62828;">
+                @_errorMessage
+            </div>
+        }
+    </div>
+
+    <!-- ══ RESULT AREA ═════════════════════════════════════════════════ -->
+    @if (_sale is not null)
+    {
+        <div style="border: 1px solid #e0e0e0; padding: 25px;">
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; font-size: 20px; color: #111;">Resultado de la Auditoría</h2>
+                
+                <button style="padding: 8px 15px; background: #1976d2; color: white; border: none; font-weight: bold; cursor: pointer;" 
+                        @onclick="PreviewPdfAsync">
+                    Generar PDF Original
+                </button>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; background: #fafafa; padding: 15px; border: 1px solid #eee; margin-bottom: 20px; font-size: 14px;">
+                <div>
+                    <strong style="color: #555;">Factura Nº:</strong>
+                    <div style="font-size: 16px; margin-top: 4px; color: #000;">#@_sale.SaleId.ToString("D6")</div>
+                </div>
+                <div>
+                    <strong style="color: #555;">Estado:</strong>
+                    <div style="font-size: 16px; margin-top: 4px; color: #000;">@_sale.Status</div>
+                </div>
+                <div>
+                    <strong style="color: #555;">Cliente Registrado:</strong>
+                    <div style="font-size: 16px; margin-top: 4px; color: #000;">@_sale.CustomerName</div>
+                </div>
+                <div>
+                    <strong style="color: #555;">Vendedor Autorizado:</strong>
+                    <div style="font-size: 16px; margin-top: 4px; color: #000;">@(string.IsNullOrEmpty(_sale.SellerName) ? "N/A" : _sale.SellerName)</div>
+                </div>
+                <div>
+                    <strong style="color: #555;">Fecha de Operación:</strong>
+                    <div style="font-size: 16px; margin-top: 4px; color: #000;">@_sale.SaleDate.ToString("dd/MM/yyyy HH:mm:ss")</div>
+                </div>
+                <div>
+                    <strong style="color: #555;">Método de Pago:</strong>
+                    <div style="font-size: 16px; margin-top: 4px; color: #000;">@_sale.PaymentType</div>
+                </div>
+            </div>
+
+            <h3 style="font-size: 16px; color: #333; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 15px;">Productos Vendidos</h3>
+            
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 14px;">
+                <thead>
+                    <tr style="background: #eee;">
+                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Cód.</th>
+                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Descripción</th>
+                        <th style="padding: 10px; border: 1px solid #ddd; text-align: right;">Precio Unit.</th>
+                        <th style="padding: 10px; border: 1px solid #ddd; text-align: right;">Cant.</th>
+                        <th style="padding: 10px; border: 1px solid #ddd; text-align: right;">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var detail in _sale.Details)
+                    {
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd; color: #555;">@detail.ProductId</td>
+                            <td style="padding: 10px; border: 1px solid #ddd; font-weight: 500;">@detail.ProductName</td>
+                            <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">$@detail.UnitPrice.ToString("N2")</td>
+                            <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">@detail.Quantity</td>
+                            <td style="padding: 10px; border: 1px solid #ddd; text-align: right; font-weight: bold;">
+                                $@detail.Subtotal.ToString("N2")
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <div style="display: flex; justify-content: flex-end;">
+                <div style="width: 250px; background: #fdfdfd; border: 1px solid #ddd; padding: 15px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; color: #555;">
+                        <span>Subtotal:</span>
+                        <span>$@_sale.Subtotal.ToString("N2")</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; color: #555;">
+                        <span>IVA (12%):</span>
+                        <span>$@_sale.TaxAmount.ToString("N2")</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 1px solid #ccc; font-weight: bold; font-size: 16px; color: #000;">
+                        <span>TOTAL:</span>
+                        <span>$@_sale.Total.ToString("N2")</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- ══ MODAL: PDF PREVIEW ══════════════════════════════════════════════ -->
+@if (_isPdfPreviewModalOpen)
+{
+    <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 9999;" @onclick="ClosePdfPreviewModal">
+        <div style="background: white; width: 90%; max-width: 1000px; height: 90vh; display: flex; flex-direction: column; border-radius: 4px; overflow: hidden;" @onclick:stopPropagation>
+            <div style="padding: 15px 20px; background: #333; color: white; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-weight: bold;">Documento de Auditoría</span>
+                <div style="display: flex; gap: 10px;">
+                    <button style="padding: 6px 12px; background: #1976d2; color: white; border: none; cursor: pointer;" @onclick="DownloadCurrentPreviewPdf">
+                        Descargar PDF
+                    </button>
+                    <button style="padding: 6px 12px; background: transparent; color: white; border: 1px solid white; cursor: pointer;" @onclick="ClosePdfPreviewModal">
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+            <div style="flex: 1; padding: 0;">
+                <iframe src="@_pdfPreviewUrl" style="width: 100%; height: 100%; border: none;"></iframe>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private int? _searchSaleId;
+    private SaleModel? _sale;
+    private bool _isLoading = false;
+    private string _errorMessage = string.Empty;
+
+    // PDF Preview state
+    private bool _isPdfPreviewModalOpen = false;
+    private string _pdfPreviewUrl = string.Empty;
+    private string _pdfPreviewBase64 = string.Empty;
+    private string _pdfPreviewFileName = string.Empty;
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SearchSaleAsync();
+        }
+    }
+
+    private async Task SearchSaleAsync()
+    {
+        _errorMessage = string.Empty;
+        _sale = null;
+
+        if (!_searchSaleId.HasValue || _searchSaleId.Value <= 0)
+        {
+            _errorMessage = "Por favor, ingrese un número de factura válido.";
+            return;
+        }
+
+        _isLoading = true;
+        try
+        {
+            var pagedResult = await SaleApiService.SearchPagedAsync(saleId: _searchSaleId.Value, customerName: null, page: 1, pageSize: 1, excludeVoided: false);
+            
+            if (pagedResult?.Items != null && pagedResult.Items.Count > 0)
+            {
+                _sale = pagedResult.Items.First();
+            }
+            else
+            {
+                _errorMessage = $"No se encontró la factura #{_searchSaleId.Value.ToString("D6")}.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = "Error al consultar: " + ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task PreviewPdfAsync()
+    {
+        if (_sale is null) return;
+
+        var pdfBytes = await SaleApiService.GetPdfAsync(_sale.SaleId);
+        if (pdfBytes is null)
+        {
+            _errorMessage = "No se pudo generar el PDF.";
+            return;
+        }
+
+        _pdfPreviewBase64 = Convert.ToBase64String(pdfBytes);
+        _pdfPreviewUrl = $"data:application/pdf;base64,{_pdfPreviewBase64}";
+        _pdfPreviewFileName = $"Auditoria_Factura_{_sale.SaleId:D6}.pdf";
+        _isPdfPreviewModalOpen = true;
+    }
+
+    private void ClosePdfPreviewModal()
+    {
+        _isPdfPreviewModalOpen = false;
+        _pdfPreviewUrl = string.Empty;
+        _pdfPreviewBase64 = string.Empty;
+    }
+
+    private async Task DownloadCurrentPreviewPdf()
+    {
+        if (!string.IsNullOrEmpty(_pdfPreviewBase64))
+        {
+            await JSRuntime.InvokeVoidAsync("downloadPdf", _pdfPreviewBase64, _pdfPreviewFileName);
+        }
+    }
+}

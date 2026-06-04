@@ -21,6 +21,20 @@ public class SaleConfiguration : IEntityTypeConfiguration<Sale>
         saleBuilder.Property(sale => sale.Status)
             .IsRequired();
 
+        saleBuilder.Property(sale => sale.CustomerDocument)
+            .HasMaxLength(20)
+            .IsRequired()
+            .HasDefaultValue("N/A");
+
+        saleBuilder.Property(sale => sale.CustomerName)
+            .HasMaxLength(150)
+            .IsRequired()
+            .HasDefaultValue("N/A");
+
+        saleBuilder.Property(sale => sale.SellerName)
+            .HasMaxLength(150)
+            .IsRequired(false);
+
         saleBuilder.Property(sale => sale.Subtotal)
             .HasColumnType("decimal(10,2)");
 
