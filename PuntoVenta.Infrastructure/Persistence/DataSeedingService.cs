@@ -1,11 +1,9 @@
 using Bogus;
 using Microsoft.EntityFrameworkCore;
-using Oracle.ManagedDataAccess.Client;
+using PuntoVenta.Domain.Entities;
 using PuntoVenta.Domain.Enums;
-using PuntoVenta.Infrastructure.Persistence;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -22,251 +20,114 @@ public class DataSeedingService
 
     public async Task GenerarDatosEstresAsync()
     {
-        // 5 minutos de tiempo de espera (timeout) para que Oracle procese todo con calma
         _context.Database.SetCommandTimeout(300);
 
-        // Forzamos la cultura en inglés para los nombres de productos tecnológicos
         var fakerTech = new Faker("en");
         var fakerEs = new Faker("es");
 
-        // ==========================================
-        // 1. GENERACIÓN DE DATOS EN MEMORIA (ARREGLOS)
-        // ==========================================
+        int recordCount = 100; // El usuario solicitó 100 datos por tabla
 
-        // --- Clientes (100,000) ---
-        var customerIdSeed = 100;
-        var clienteIds = new int[100000];
-        var clienteDocumentos = new string[100000];
-        var clienteNombres = new string[100000];
-        var clienteApellidos = new string[100000];
-        var clienteTelefonos = new string[100000];
-        var clienteDirecciones = new string[100000];
-        var clienteCiudades = new string[100000];
-        var clienteEmails = new string[100000];
+        using var transaction = await _context.Database.BeginTransactionAsync();
 
-        // 🛠️ CAMBIO ORACLE 23c FREE: Ahora usamos booleanos nativos (true) en lugar de (byte)1
-        var clienteEstados = Enumerable.Repeat(true, 100000).ToArray();
-
-        for (int i = 0; i < 100000; i++)
+        try
         {
-            clienteIds[i] = ++customerIdSeed;
-            clienteDocumentos[i] = fakerEs.Random.ReplaceNumbers("18########");
-            clienteNombres[i] = fakerEs.Name.FirstName();
-            clienteApellidos[i] = fakerEs.Name.LastName();
-            clienteTelefonos[i] = fakerEs.Phone.PhoneNumber("09########");
-            clienteDirecciones[i] = fakerEs.Address.StreetAddress();
-            clienteCiudades[i] = "Ambato";
-            clienteEmails[i] = fakerEs.Internet.Email(clienteNombres[i], clienteApellidos[i]);
-        }
+            // 1. LIMPIEZA PREVIA
+            await _context.Database.ExecuteSqlRawAsync("DELETE FROM [StockMovements]");
+            await _context.Database.ExecuteSqlRawAsync("DELETE FROM [SaleDetails]");
+            await _context.Database.ExecuteSqlRawAsync("DELETE FROM [Sales]");
+            await _context.Database.ExecuteSqlRawAsync("DELETE FROM [Products]");
+            await _context.Database.ExecuteSqlRawAsync("DELETE FROM [Customers]");
+            
+            // Reiniciar los contadores de identidad (IDENTITY)
+            await _context.Database.ExecuteSqlRawAsync("DBCC CHECKIDENT ('[StockMovements]', RESEED, 0)");
+            await _context.Database.ExecuteSqlRawAsync("DBCC CHECKIDENT ('[SaleDetails]', RESEED, 0)");
+            await _context.Database.ExecuteSqlRawAsync("DBCC CHECKIDENT ('[Sales]', RESEED, 0)");
+            await _context.Database.ExecuteSqlRawAsync("DBCC CHECKIDENT ('[Products]', RESEED, 0)");
+            await _context.Database.ExecuteSqlRawAsync("DBCC CHECKIDENT ('[Customers]', RESEED, 0)");
 
-        // --- Productos Tecnológicos (100,000) ---
-        var productIdSeed = 100;
-        var productoIds = new int[100000];
-        var productoNombres = new string[100000];
-        var productoPrecios = new decimal[100000];
-        var productoStocks = new int[100000];
-
-        // 🛠️ CAMBIO ORACLE 23c FREE: Booleanos nativos para productos activos
-        var productoEstados = Enumerable.Repeat(true, 100000).ToArray();
-
-        var marcasTech = new[] { "Asus ROG", "MSI Pro", "Corsair", "Logitech G", "Razer", "Samsung Evo", "Kingston Fury", "Intel Core", "AMD Ryzen", "Sony", "Apple", "Dell UltraSharp", "Gigabyte" };
-        var categoriesTech = new[] { "Gaming Laptop", "Mechanical Keyboard", "Wireless Mouse", "NVMe M.2 SSD", "Graphics Card RTX", "DDR5 RAM 16GB", "Curved Monitor", "Processor", "Liquid Cooling", "Headset 7.1" };
-
-        for (int i = 0; i < 100000; i++)
-        {
-            productoIds[i] = ++productIdSeed;
-
-            var marca = fakerTech.PickRandom(marcasTech);
-            var categoria = fakerTech.PickRandom(categoriesTech);
-            var modelo = fakerTech.Commerce.Product();
-
-            productoNombres[i] = $"{marca} {categoria} ({modelo})";
-            productoPrecios[i] = Math.Round(fakerTech.Random.Decimal(15.00m, 1499.00m), 2);
-            productoStocks[i] = fakerTech.Random.Number(5, 300);
-        }
-
-        // --- Ventas (100,000) y Detalles Dinámicos ---
-        var saleIdSeed = 100;
-        var saleDetailIdSeed = 100;
-
-        var ventaIds = new int[100000];
-        var ventaClienteIds = new int[100000];
-        var ventaFechas = new DateTime[100000];
-        var ventaTiposPago = new byte[100000];
-        var ventaSubtotales = new decimal[100000];
-        var ventaImpuestos = new decimal[100000];
-        var ventaTotales = new decimal[100000];
-        var ventaEstados = new byte[100000];
-
-        var detIds = new List<int>();
-        var detVentaIds = new List<int>();
-        var detProductoIds = new List<int>();
-        var detCantidades = new List<int>();
-        var detPreciosUnitarios = new List<decimal>();
-
-        for (int i = 0; i < 100000; i++)
-        {
-            var actualSaleId = ++saleIdSeed;
-            ventaIds[i] = actualSaleId;
-            ventaClienteIds[i] = clienteIds[fakerEs.Random.Number(0, 99999)];
-            ventaFechas[i] = fakerEs.Date.Past(1);
-            ventaTiposPago[i] = 1; // 1: Solo efectivo (Requisito del sistema)
-            ventaEstados[i] = (byte)SaleStatus.Confirmed;
-
-            int itemsEnVenta = fakerEs.Random.Number(1, 2);
-            decimal subtotalVenta = 0;
-
-            for (int j = 0; j < itemsEnVenta; j++)
+            // 2. GENERACIÓN E INSERCIÓN DE DATOS CON EF CORE
+            var customers = new List<Customer>();
+            for (int i = 0; i < recordCount; i++)
             {
-                int randomProdIndex = fakerEs.Random.Number(0, 99999);
-                int cantidad = fakerEs.Random.Number(1, 2);
-                decimal precio = productoPrecios[randomProdIndex];
-
-                subtotalVenta += (precio * cantidad);
-
-                detIds.Add(++saleDetailIdSeed);
-                detVentaIds.Add(actualSaleId);
-                detProductoIds.Add(productoIds[randomProdIndex]);
-                detCantidades.Add(cantidad);
-                detPreciosUnitarios.Add(precio);
+                var customer = Customer.Create(
+                    documentNumber: fakerEs.Random.ReplaceNumbers("18########"),
+                    firstName: fakerEs.Name.FirstName(),
+                    lastName: fakerEs.Name.LastName(),
+                    phone: fakerEs.Phone.PhoneNumber("09########"),
+                    address: fakerEs.Address.StreetAddress(),
+                    city: "Ambato",
+                    email: fakerEs.Internet.Email()
+                );
+                customers.Add(customer);
             }
+            await _context.Customers.AddRangeAsync(customers);
+            await _context.SaveChangesAsync();
 
-            decimal IVA = Math.Round(subtotalVenta * 0.15m, 2); // IVA 15% Ecuador
-            ventaSubtotales[i] = Math.Round(subtotalVenta, 2);
-            ventaImpuestos[i] = IVA;
-            ventaTotales[i] = Math.Round(subtotalVenta + IVA, 2);
-        }
+            var products = new List<Product>();
+            var marcasTech = new[] { "Asus ROG", "MSI Pro", "Corsair", "Logitech G", "Razer", "Samsung Evo", "Kingston Fury", "Intel Core", "AMD Ryzen", "Sony", "Apple", "Dell UltraSharp", "Gigabyte" };
+            var categoriesTech = new[] { "Gaming Laptop", "Mechanical Keyboard", "Wireless Mouse", "NVMe M.2 SSD", "Graphics Card RTX", "DDR5 RAM 16GB", "Curved Monitor", "Processor", "Liquid Cooling", "Headset 7.1" };
 
-        // ==========================================
-        // 2. INSERCIÓN MASIVA EN ORACLE (ARRAY BINDING)
-        // ==========================================
-        var connectionString = _context.Database.GetConnectionString();
-
-        using (var connection = new OracleConnection(connectionString))
-        {
-            await connection.OpenAsync();
-            using (var transaction = connection.BeginTransaction())
+            for (int i = 0; i < recordCount; i++)
             {
-                try
-                {
-                    // 🧹 🚀 LIMPIEZA AUTOMÁTICA PREVIA
-                    using (var limpiarCommand = connection.CreateCommand())
-                    {
-                        limpiarCommand.Transaction = transaction;
-                        limpiarCommand.CommandText = @"
-                            BEGIN
-                                EXECUTE IMMEDIATE 'DELETE FROM ""StockMovements""';
-                                EXECUTE IMMEDIATE 'DELETE FROM ""SaleDetails""';
-                                EXECUTE IMMEDIATE 'DELETE FROM ""Sales""';
-                                EXECUTE IMMEDIATE 'DELETE FROM ""Products""';
-                                EXECUTE IMMEDIATE 'DELETE FROM ""Customers""';
-                            END;";
-
-                        await limpiarCommand.ExecuteNonQueryAsync();
-                    }
-
-                    // INSERCIÓN EN CUSTOMERS
-                    using (var command = connection.CreateCommand())
-                    {
-                        command.Transaction = transaction;
-                        command.ArrayBindCount = 100000;
-                        command.CommandText = @"INSERT INTO ""Customers"" (""CustomerId"", ""DocumentNumber"", ""FirstName"", ""LastName"", ""Phone"", ""Address"", ""City"", ""Email"", ""IsActive"") VALUES (:CustomerId, :DocumentNumber, :FirstName, :LastName, :Phone, :Address, :City, :Email, :IsActive)";
-                        command.Parameters.Add(new OracleParameter("CustomerId", OracleDbType.Int32) { Value = clienteIds });
-                        command.Parameters.Add(new OracleParameter("DocumentNumber", OracleDbType.Varchar2) { Value = clienteDocumentos });
-                        command.Parameters.Add(new OracleParameter("FirstName", OracleDbType.Varchar2) { Value = clienteNombres });
-                        command.Parameters.Add(new OracleParameter("LastName", OracleDbType.Varchar2) { Value = clienteApellidos });
-                        command.Parameters.Add(new OracleParameter("Phone", OracleDbType.Varchar2) { Value = clienteTelefonos });
-                        command.Parameters.Add(new OracleParameter("Address", OracleDbType.Varchar2) { Value = clienteDirecciones });
-                        command.Parameters.Add(new OracleParameter("City", OracleDbType.Varchar2) { Value = clienteCiudades });
-                        command.Parameters.Add(new OracleParameter("Email", OracleDbType.Varchar2) { Value = clienteEmails });
-
-                        // 🛠️ CAMBIO ORACLE 23c FREE: Enviar como OracleDbType.Boolean nativo
-                        command.Parameters.Add(new OracleParameter("IsActive", OracleDbType.Boolean) { Value = clienteEstados });
-
-                        await command.ExecuteNonQueryAsync();
-                    }
-
-                    // INSERCIÓN EN PRODUCTS
-                    using (var command = connection.CreateCommand())
-                    {
-                        command.Transaction = transaction;
-                        command.ArrayBindCount = 100000;
-                        command.CommandText = @"INSERT INTO ""Products"" (""ProductId"", ""Name"", ""Price"", ""Stock"", ""IsActive"") VALUES (:ProductId, :Name, :Price, :Stock, :IsActive)";
-                        command.Parameters.Add(new OracleParameter("ProductId", OracleDbType.Int32) { Value = productoIds });
-                        command.Parameters.Add(new OracleParameter("Name", OracleDbType.Varchar2) { Value = productoNombres });
-                        command.Parameters.Add(new OracleParameter("Price", OracleDbType.Decimal) { Value = productoPrecios });
-                        command.Parameters.Add(new OracleParameter("Stock", OracleDbType.Int32) { Value = productoStocks });
-
-                        // 🛠️ CAMBIO ORACLE 23c FREE: Enviar como OracleDbType.Boolean nativo
-                        command.Parameters.Add(new OracleParameter("IsActive", OracleDbType.Boolean) { Value = productoEstados });
-
-                        await command.ExecuteNonQueryAsync();
-                    }
-
-                    // INSERCIÓN EN SALES (CABECERA)
-                    using (var command = connection.CreateCommand())
-                    {
-                        command.Transaction = transaction;
-                        command.ArrayBindCount = 100000;
-                        command.CommandText = @"INSERT INTO ""Sales"" (""SaleId"", ""CustomerId"", ""SaleDate"", ""PaymentType"", ""Subtotal"", ""TaxAmount"", ""Total"", ""Status"") VALUES (:SaleId, :CustomerId, :SaleDate, :PaymentType, :Subtotal, :TaxAmount, :Total, :Status)";
-                        command.Parameters.Add(new OracleParameter("SaleId", OracleDbType.Int32) { Value = ventaIds });
-                        command.Parameters.Add(new OracleParameter("CustomerId", OracleDbType.Int32) { Value = ventaClienteIds });
-                        command.Parameters.Add(new OracleParameter("SaleDate", OracleDbType.TimeStamp) { Value = ventaFechas });
-                        command.Parameters.Add(new OracleParameter("PaymentType", OracleDbType.Byte) { Value = ventaTiposPago });
-                        command.Parameters.Add(new OracleParameter("Subtotal", OracleDbType.Decimal) { Value = ventaSubtotales });
-                        command.Parameters.Add(new OracleParameter("TaxAmount", OracleDbType.Decimal) { Value = ventaImpuestos });
-                        command.Parameters.Add(new OracleParameter("Total", OracleDbType.Decimal) { Value = ventaTotales });
-                        command.Parameters.Add(new OracleParameter("Status", OracleDbType.Byte) { Value = ventaEstados });
-                        await command.ExecuteNonQueryAsync();
-                    }
-
-                    // INSERCIÓN EN SALEDETAILS (DETALLE)
-                    using (var command = connection.CreateCommand())
-                    {
-                        command.Transaction = transaction;
-                        command.ArrayBindCount = detIds.Count;
-                        command.CommandText = @"INSERT INTO ""SaleDetails"" (""SaleDetailId"", ""SaleId"", ""ProductId"", ""Quantity"", ""UnitPrice"") VALUES (:SaleDetailId, :SaleId, :ProductId, :Quantity, :UnitPrice)";
-                        command.Parameters.Add(new OracleParameter("SaleDetailId", OracleDbType.Int32) { Value = detIds.ToArray() });
-                        command.Parameters.Add(new OracleParameter("SaleId", OracleDbType.Int32) { Value = detVentaIds.ToArray() });
-                        command.Parameters.Add(new OracleParameter("ProductId", OracleDbType.Int32) { Value = detProductoIds.ToArray() });
-                        command.Parameters.Add(new OracleParameter("Quantity", OracleDbType.Int32) { Value = detCantidades.ToArray() });
-                        command.Parameters.Add(new OracleParameter("UnitPrice", OracleDbType.Decimal) { Value = detPreciosUnitarios.ToArray() });
-                        await command.ExecuteNonQueryAsync();
-                    }
-
-                    // =========================================================================
-                    // 🔥 SINCRONIZACIÓN AUTOMÁTICA DE SECUENCIAS (EVITA EL ERROR ORA-00001)
-                    // =========================================================================
-                    using (var seqCommand = connection.CreateCommand())
-                    {
-                        seqCommand.Transaction = transaction;
-
-                        // Agregamos un colchón de 500 números por encima del máximo insertado
-                        int nextCustomerSeq = customerIdSeed + 500;
-                        int nextProductSeq = productIdSeed + 500;
-                        int nextSaleSeq = saleIdSeed + 500;
-                        int nextDetailSeq = saleDetailIdSeed + 500;
-
-                        seqCommand.CommandText = $@"
-                            BEGIN
-                                EXECUTE IMMEDIATE 'ALTER TABLE ""Customers"" MODIFY (""CustomerId"" GENERATED AS IDENTITY (START WITH {nextCustomerSeq}))';
-                                EXECUTE IMMEDIATE 'ALTER TABLE ""Products"" MODIFY (""ProductId"" GENERATED AS IDENTITY (START WITH {nextProductSeq}))';
-                                EXECUTE IMMEDIATE 'ALTER TABLE ""Sales"" MODIFY (""SaleId"" GENERATED AS IDENTITY (START WITH {nextSaleSeq}))';
-                                EXECUTE IMMEDIATE 'ALTER TABLE ""SaleDetails"" MODIFY (""SaleDetailId"" GENERATED AS IDENTITY (START WITH {nextDetailSeq}))';
-                            END;";
-
-                        await seqCommand.ExecuteNonQueryAsync();
-                    }
-
-                    // Guardamos la transacción completa con las secuencias recalibradas
-                    await transaction.CommitAsync();
-                }
-                catch (Exception)
-                {
-                    await transaction.RollbackAsync();
-                    throw;
-                }
+                var marca = fakerTech.PickRandom(marcasTech);
+                var categoria = fakerTech.PickRandom(categoriesTech);
+                var modelo = fakerTech.Commerce.Product();
+                var product = Product.Create(
+                    name: $"{marca} {categoria} ({modelo})",
+                    price: Math.Round(fakerTech.Random.Decimal(15.00m, 1499.00m), 2),
+                    stock: fakerTech.Random.Number(5, 300)
+                );
+                products.Add(product);
             }
+            await _context.Products.AddRangeAsync(products);
+            await _context.SaveChangesAsync();
+
+            var sales = new List<Sale>();
+            for (int i = 0; i < recordCount; i++)
+            {
+                var randomCustomer = fakerEs.PickRandom(customers);
+                
+                // Seleccionar de 1 a 3 productos aleatorios para el detalle
+                int itemsEnVenta = fakerEs.Random.Number(1, 3);
+                var selectedProducts = fakerEs.PickRandom(products, itemsEnVenta).ToList();
+
+                var saleDetails = new List<SaleDetail>();
+                foreach (var prod in selectedProducts)
+                {
+                    int cantidad = fakerEs.Random.Number(1, 2);
+                    saleDetails.Add(SaleDetail.Create(
+                        productId: prod.ProductId,
+                        productName: prod.Name,
+                        quantity: cantidad,
+                        unitPrice: prod.Price
+                    ));
+                }
+
+                var sale = Sale.Create(
+                    customerId: randomCustomer.CustomerId,
+                    customerDocument: randomCustomer.DocumentNumber,
+                    customerName: randomCustomer.FullName,
+                    paymentType: PaymentType.Cash,
+                    details: saleDetails,
+                    userId: null,
+                    sellerName: null
+                );
+
+                // Como la venta es histórica, la confirmamos directamente y ajustamos la fecha
+                sale.ConfirmSale();
+                sale.UpdateDraft(sale.CustomerId, sale.CustomerDocument, sale.CustomerName, sale.PaymentType, saleDetails, null, null); // Esto es solo un hack para el constructor, pero podemos cambiar propiedades internas si EF lo permite, o dejar la fecha por defecto
+                
+                sales.Add(sale);
+            }
+            await _context.Sales.AddRangeAsync(sales);
+            await _context.SaveChangesAsync();
+
+            await transaction.CommitAsync();
+        }
+        catch (Exception)
+        {
+            await transaction.RollbackAsync();
+            throw;
         }
     }
 }

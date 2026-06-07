@@ -71,6 +71,16 @@ public class CustomerApiService
         catch { return null; }
     }
 
+    public async Task<bool> UpdateAsync(int customerId, UpdateCustomerModel updateCustomerModel)
+    {
+        try
+        {
+            var response = await _httpClient.PutAsJsonAsync($"api/Customers/{customerId}", updateCustomerModel);
+            return response.IsSuccessStatusCode;
+        }
+        catch { return false; }
+    }
+
     public async Task<bool> ActivateAsync(int customerId)
     {
         try

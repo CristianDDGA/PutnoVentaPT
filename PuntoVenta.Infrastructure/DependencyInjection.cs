@@ -16,9 +16,9 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        // 1. CAMBIO AQUÍ: Cambiamos UseSqlServer por UseOracle
+        // 1. CAMBIO AQUÍ: Cambiamos UseOracle por UseSqlServer
         services.AddDbContext<AppDbContext>(dbContextOptions =>
-            dbContextOptions.UseOracle(
+            dbContextOptions.UseSqlServer(
                 configuration.GetConnectionString("DefaultConnection"),
                 b => b.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName))); // Esto asegura que encuentre las migraciones aquí
 

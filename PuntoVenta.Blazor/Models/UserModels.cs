@@ -13,6 +13,9 @@ public class UserModel
     public int FailedLoginAttempts { get; set; }
     public int RoleId { get; set; }
     public string RoleName { get; set; } = string.Empty;
+
+    public string? LastModifiedBy { get; set; }
+    public DateTime? LastModifiedAt { get; set; }
 }
 
 public class CreateUserModel

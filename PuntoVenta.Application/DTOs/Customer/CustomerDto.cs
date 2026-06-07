@@ -11,5 +11,7 @@ public class CustomerDto
     public string? City          { get; set; }
     public string? Email         { get; set; }
     public bool   IsActive       { get; set; }
+    public string? LastModifiedBy { get; set; }
+    public DateTime? LastModifiedAt { get; set; }
     public string FullName       => $"{FirstName} {LastName}";
 }

@@ -356,6 +356,7 @@ public class SaleService : ISaleService
             CustomerPhone    = sale.Customer?.Phone ?? string.Empty,
             CustomerEmail    = sale.Customer?.Email ?? string.Empty,
             SellerName       = !string.IsNullOrWhiteSpace(sale.SellerName) ? sale.SellerName : (sale.User?.FullName ?? string.Empty),
+            CreatedByUsername = sale.User?.Username ?? string.Empty,
             SaleDate         = sale.SaleDate,
             PaymentType      = sale.PaymentType.ToSpanish(),
             Subtotal         = sale.Subtotal,

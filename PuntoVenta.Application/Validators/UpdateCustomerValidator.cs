@@ -3,9 +3,9 @@ using PuntoVenta.Application.DTOs.Customer;
 
 namespace PuntoVenta.Application.Validators;
 
-public class CreateCustomerValidator : AbstractValidator<CreateCustomerDto>
+public class UpdateCustomerValidator : AbstractValidator<UpdateCustomerDto>
 {
-    public CreateCustomerValidator()
+    public UpdateCustomerValidator()
     {
         RuleFor(customer => customer.DocumentNumber)
             .NotEmpty().WithMessage("El número de documento (RUC/Cédula) es obligatorio.")
@@ -63,14 +63,14 @@ public class CreateCustomerValidator : AbstractValidator<CreateCustomerDto>
 
         // El tercer dígito es menor a 6 para personas naturales
         var thirdDigit = int.Parse(cedula.Substring(2, 1));
-        if (thirdDigit >= 6) return true; // Asumimos que para RUCs jurídicos o públicos omitimos el módulo 10 aquí, u otro algoritmo (módulo 11) aplica.
+        if (thirdDigit >= 6) return true; 
 
         // Algoritmo Módulo 10
         int sum = 0;
         for (int i = 0; i < 9; i++)
         {
             int digit = cedula[i] - '0';
-            if (i % 2 == 0) // Posición impar (0, 2, 4...)
+            if (i % 2 == 0) 
             {
                 digit *= 2;
                 if (digit > 9) digit -= 9;

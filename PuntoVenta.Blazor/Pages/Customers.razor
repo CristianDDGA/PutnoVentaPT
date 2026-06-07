@@ -73,6 +73,7 @@
                             <th>Ciudad</th>
                             <th>Email</th>
                             <th class="align-center">Estado</th>
+                            <th class="align-center">Modificado Por</th>
                             @if (_isAdmin)
                             {
                                 <th class="align-center">Acciones</th>
@@ -94,9 +95,13 @@
                                         @(customer.IsActive ? "Activo" : "Inactivo")
                                     </span>
                                 </td>
+                                <td class="align-center" style="font-size: var(--font-size-sm); color: var(--color-text-secondary);">
+                                    @(string.IsNullOrEmpty(customer.LastModifiedBy) ? "-" : customer.LastModifiedBy)
+                                </td>
                                 @if (_isAdmin)
                                 {
                                     <td class="align-center">
+                                        <button class="btn btn--primary btn--sm" @onclick="() => OpenEditModal(customer)" disabled="@_isBusy" style="margin-right: 4px;">Editar</button>
                                         @if (customer.IsActive)
                                         {
                                             <button class="btn btn--danger btn--sm" @onclick="() => DeleteCustomerAsync(customer)" disabled="@_isBusy">Eliminar</button>
@@ -141,10 +146,10 @@
     <div class="modal-overlay">
         <div class="modal-box" style="max-width: 600px;" @onclick:stopPropagation>
             <div class="modal-header">
-                <span class="modal-title">Nuevo cliente</span>
+                <span class="modal-title">@(_isEditing ? "Editar cliente" : "Nuevo cliente")</span>
                 <button class="btn btn--ghost btn--icon" @onclick="CloseCreateModal"><i class="ph ph-x"></i></button>
             </div>
-            <EditForm Model="_newCustomer" OnValidSubmit="CreateCustomerAsync">
+            <EditForm Model="_newCustomer" OnValidSubmit="SaveCustomerAsync">
                 <DataAnnotationsValidator />
                 <div class="modal-body">
                     <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap:var(--spacing-md);">
@@ -184,6 +189,12 @@
                             <ValidationMessage For="@(() => _newCustomer.Email)" class="alert alert--error" style="margin-top:4px; padding:4px;" />
                         </div>
                     </div>
+                    @if (_isEditing && !string.IsNullOrWhiteSpace(_lastModifiedBy))
+                    {
+                        <div style="margin-top:var(--spacing-md); font-size:var(--font-size-sm); color:var(--color-text-secondary); display:flex; align-items:center; gap:4px;">
+                            <i class="ph ph-info"></i> Última modificación por: <strong>@_lastModifiedBy</strong> el @(_lastModifiedAt?.ToString("g") ?? "")
+                        </div>
+                    }
                     @if (!string.IsNullOrWhiteSpace(_modalMessage))
                     {
                         <div class="alert @(_isModalError ? "alert--error" : "alert--success")" style="margin-top:var(--spacing-md);">@_modalMessage</div>
@@ -191,7 +202,7 @@
                 </div>
                 <div class="modal-footer" style="justify-content: flex-end;">
                     <button type="button" class="btn btn--ghost" @onclick="CloseCreateModal">Cancelar</button>
-                    <button type="submit" class="btn btn--success" disabled="@_isBusy">Crear cliente</button>
+                    <button type="submit" class="btn btn--success" disabled="@_isBusy">@(_isEditing ? "Guardar cambios" : "Crear cliente")</button>
                 </div>
             </EditForm>
         </div>
@@ -213,6 +224,10 @@
     private bool _isCreateModalOpen;
     private string? _modalMessage;
     private bool _isModalError;
+    private bool _isEditing;
+    private int _editingCustomerId;
+    private string? _lastModifiedBy;
+    private DateTime? _lastModifiedAt;
     private readonly CreateCustomerModel _newCustomer = new();
     private System.Threading.Timer? _debounceTimer;
 
@@ -293,8 +308,11 @@
 
     private void OpenCreateModal()
     {
+        _isEditing = false;
         _isCreateModalOpen = true;
         _modalMessage = null;
+        _lastModifiedBy = null;
+        _lastModifiedAt = null;
         _newCustomer.DocumentNumber = string.Empty;
         _newCustomer.FirstName = string.Empty;
         _newCustomer.LastName = string.Empty;
@@ -304,29 +322,72 @@
         _newCustomer.Email = null;
     }
 
+    private void OpenEditModal(CustomerModel customer)
+    {
+        _isEditing = true;
+        _editingCustomerId = customer.CustomerId;
+        _isCreateModalOpen = true;
+        _modalMessage = null;
+        
+        _lastModifiedBy = customer.LastModifiedBy;
+        _lastModifiedAt = customer.LastModifiedAt;
+        
+        _newCustomer.DocumentNumber = customer.DocumentNumber;
+        _newCustomer.FirstName = customer.FirstName;
+        _newCustomer.LastName = customer.LastName;
+        _newCustomer.Phone = customer.Phone;
+        _newCustomer.Address = customer.Address;
+        _newCustomer.City = customer.City;
+        _newCustomer.Email = customer.Email;
+    }
+
     private void CloseCreateModal()
     {
         _isCreateModalOpen = false;
     }
 
-    private async Task CreateCustomerAsync()
+    private async Task SaveCustomerAsync()
     {
         _isBusy = true;
         _modalMessage = null;
 
         try
         {
-            var saved = await CustomerApiService.CreateAsync(_newCustomer);
-            if (saved is null)
+            if (_isEditing)
             {
-                _modalMessage = "No se pudo crear el cliente.";
-                _isModalError = true;
-                return;
+                var updateModel = new UpdateCustomerModel
+                {
+                    DocumentNumber = _newCustomer.DocumentNumber,
+                    FirstName = _newCustomer.FirstName,
+                    LastName = _newCustomer.LastName,
+                    Phone = _newCustomer.Phone,
+                    Address = _newCustomer.Address,
+                    City = _newCustomer.City,
+                    Email = _newCustomer.Email
+                };
+                var success = await CustomerApiService.UpdateAsync(_editingCustomerId, updateModel);
+                if (!success)
+                {
+                    _modalMessage = "No se pudo actualizar el cliente.";
+                    _isModalError = true;
+                    return;
+                }
+                SetMessage("Cliente actualizado correctamente.", false);
+            }
+            else
+            {
+                var saved = await CustomerApiService.CreateAsync(_newCustomer);
+                if (saved is null)
+                {
+                    _modalMessage = "No se pudo crear el cliente.";
+                    _isModalError = true;
+                    return;
+                }
+                SetMessage("Cliente creado correctamente.", false);
             }
 
-            SetMessage("Cliente creado correctamente.", false);
             CloseCreateModal();
-            await LoadPageAsync(1);
+            await LoadPageAsync(_currentPage);
         }
         finally
         {

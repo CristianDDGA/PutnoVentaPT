@@ -56,7 +56,9 @@ public class UserRepository : IUserRepository
                 .SetProperty(existingUser => existingUser.PasswordHash, user.PasswordHash)
                 .SetProperty(existingUser => existingUser.IsActive, user.IsActive)
                 .SetProperty(existingUser => existingUser.FailedLoginAttempts, user.FailedLoginAttempts)
-                .SetProperty(existingUser => existingUser.IsLocked, user.IsLocked));
+                .SetProperty(existingUser => existingUser.IsLocked, user.IsLocked)
+                .SetProperty(existingUser => existingUser.LastModifiedBy, user.LastModifiedBy)
+                .SetProperty(existingUser => existingUser.LastModifiedAt, user.LastModifiedAt));
     }
 
     public async Task<bool> ActivateAsync(int userId)

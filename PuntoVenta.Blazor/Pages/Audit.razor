@@ -7,125 +7,132 @@
 
 <PageTitle>Auditoría — Punto de Venta</PageTitle>
 
-<div style="max-width: 800px; margin: 40px auto; font-family: sans-serif; background: #fff; padding: 30px; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-
-    <div style="border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 25px;">
-        <h1 style="margin: 0; font-size: 24px; color: #222;">Módulo de Auditoría de Ventas</h1>
-        <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">Herramienta exclusiva para consulta de información inmutable.</p>
+<div class="section-gap">
+    <div>
+        <h1 style="font-size:var(--font-size-2xl); font-weight:var(--font-weight-bold); color:var(--color-text-primary); margin-bottom:4px;">Módulo de Auditoría de Ventas</h1>
+        <p class="text-muted">Herramienta exclusiva para consulta de información inmutable de facturación.</p>
     </div>
 
-    <!-- ══ SEARCH BAR ══════════════════════════════════════════════════ -->
-    <div style="background: #f9f9f9; padding: 20px; border: 1px solid #e0e0e0; margin-bottom: 30px;">
-        <label style="display: block; font-weight: bold; margin-bottom: 8px; color: #333;">Ingrese el Número de Factura:</label>
-        <div style="display: flex; gap: 10px;">
-            <input type="number" 
-                   style="flex: 1; padding: 10px; border: 1px solid #ccc; font-size: 16px;" 
-                   placeholder="Ej: 1001"
-                   @bind="_searchSaleId"
-                   @bind:event="oninput"
-                   @onkeydown="HandleKeyDown" />
-                   
-            <button style="padding: 10px 20px; background: #333; color: #fff; border: none; font-weight: bold; cursor: pointer; font-size: 16px;"
-                    @onclick="SearchSaleAsync" disabled="@_isLoading">
+    <!-- SEARCH BAR -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">Búsqueda de Factura</span>
+        </div>
+        <div style="display:flex; gap:var(--spacing-md); align-items:flex-end;">
+            <div class="field-group" style="flex:1; margin-bottom:0;">
+                <label class="field-label">Ingrese el Número de Factura</label>
+                <input type="number" 
+                       class="field-input"
+                       placeholder="Ej: 1001"
+                       @bind="_searchSaleId"
+                       @bind:event="oninput"
+                       @onkeydown="HandleKeyDown" />
+            </div>
+            <button class="btn btn--primary" style="height:42px;" @onclick="SearchSaleAsync" disabled="@_isLoading">
                 @if (_isLoading)
                 {
-                    <span>Consultando...</span>
+                    <span><i class="ph ph-spinner ph-spin" style="margin-right:4px;"></i> Consultando...</span>
                 }
                 else
                 {
-                    <span>Buscar</span>
+                    <span><i class="ph ph-magnifying-glass" style="margin-right:4px;"></i> Buscar</span>
                 }
             </button>
         </div>
         
         @if (!string.IsNullOrEmpty(_errorMessage))
         {
-            <div style="margin-top: 15px; padding: 10px; background: #ffebee; color: #c62828; border-left: 4px solid #c62828;">
+            <div class="alert alert--error" style="margin-top:var(--spacing-md);">
                 @_errorMessage
             </div>
         }
     </div>
 
-    <!-- ══ RESULT AREA ═════════════════════════════════════════════════ -->
+    <!-- RESULT AREA -->
     @if (_sale is not null)
     {
-        <div style="border: 1px solid #e0e0e0; padding: 25px;">
-            
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 style="margin: 0; font-size: 20px; color: #111;">Resultado de la Auditoría</h2>
-                
-                <button style="padding: 8px 15px; background: #1976d2; color: white; border: none; font-weight: bold; cursor: pointer;" 
-                        @onclick="PreviewPdfAsync">
-                    Generar PDF Original
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Resultado de la Auditoría</span>
+                <button class="btn btn--secondary btn--sm ml-auto" @onclick="PreviewPdfAsync">
+                    <i class="ph ph-file-pdf"></i> Generar PDF Original
                 </button>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; background: #fafafa; padding: 15px; border: 1px solid #eee; margin-bottom: 20px; font-size: 14px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--spacing-md); background: rgba(0,0,0,0.02); padding: var(--spacing-md); border-radius: var(--border-radius-md); border: 1px solid var(--color-border); margin-bottom: var(--spacing-lg);">
                 <div>
-                    <strong style="color: #555;">Factura Nº:</strong>
-                    <div style="font-size: 16px; margin-top: 4px; color: #000;">#@_sale.SaleId.ToString("D6")</div>
+                    <strong style="color: var(--color-text-secondary); font-size: var(--font-size-sm); display: block;">Factura Nº:</strong>
+                    <div style="font-size: var(--font-size-lg); font-weight: bold; margin-top: 4px; color: var(--color-text-primary);">#@_sale.SaleId.ToString("D6")</div>
                 </div>
                 <div>
-                    <strong style="color: #555;">Estado:</strong>
-                    <div style="font-size: 16px; margin-top: 4px; color: #000;">@_sale.Status</div>
+                    <strong style="color: var(--color-text-secondary); font-size: var(--font-size-sm); display: block;">Estado:</strong>
+                    <div style="margin-top: 4px;">
+                        <span class="badge @(_sale.Status == "Completada" ? "badge--success" : "badge--error")">@_sale.Status</span>
+                    </div>
                 </div>
                 <div>
-                    <strong style="color: #555;">Cliente Registrado:</strong>
-                    <div style="font-size: 16px; margin-top: 4px; color: #000;">@_sale.CustomerName</div>
+                    <strong style="color: var(--color-text-secondary); font-size: var(--font-size-sm); display: block;">Cliente Registrado:</strong>
+                    <div style="font-size: var(--font-size-base); margin-top: 4px; color: var(--color-text-primary);">@_sale.CustomerName</div>
                 </div>
                 <div>
-                    <strong style="color: #555;">Vendedor Autorizado:</strong>
-                    <div style="font-size: 16px; margin-top: 4px; color: #000;">@(string.IsNullOrEmpty(_sale.SellerName) ? "N/A" : _sale.SellerName)</div>
+                    <strong style="color: var(--color-text-secondary); font-size: var(--font-size-sm); display: block;">Vendedor Autorizado:</strong>
+                    <div style="font-size: var(--font-size-base); margin-top: 4px; color: var(--color-text-primary);">@(string.IsNullOrEmpty(_sale.SellerName) ? "N/A" : _sale.SellerName)</div>
                 </div>
                 <div>
-                    <strong style="color: #555;">Fecha de Operación:</strong>
-                    <div style="font-size: 16px; margin-top: 4px; color: #000;">@_sale.SaleDate.ToString("dd/MM/yyyy HH:mm:ss")</div>
+                    <strong style="color: var(--color-text-secondary); font-size: var(--font-size-sm); display: block;">Creado Por (Usuario):</strong>
+                    <div style="font-size: var(--font-size-base); margin-top: 4px; color: var(--color-text-primary);">@(string.IsNullOrEmpty(_sale.CreatedByUsername) ? "N/A" : _sale.CreatedByUsername)</div>
                 </div>
                 <div>
-                    <strong style="color: #555;">Método de Pago:</strong>
-                    <div style="font-size: 16px; margin-top: 4px; color: #000;">@_sale.PaymentType</div>
+                    <strong style="color: var(--color-text-secondary); font-size: var(--font-size-sm); display: block;">Fecha de Operación:</strong>
+                    <div style="font-size: var(--font-size-base); margin-top: 4px; color: var(--color-text-primary);">@_sale.SaleDate.ToString("dd/MM/yyyy HH:mm:ss")</div>
+                </div>
+                <div>
+                    <strong style="color: var(--color-text-secondary); font-size: var(--font-size-sm); display: block;">Método de Pago:</strong>
+                    <div style="font-size: var(--font-size-base); margin-top: 4px; color: var(--color-text-primary);">@_sale.PaymentType</div>
                 </div>
             </div>
 
-            <h3 style="font-size: 16px; color: #333; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 15px;">Productos Vendidos</h3>
+            <h3 style="font-size: var(--font-size-base); color: var(--color-text-primary); border-bottom: 1px solid var(--color-border); padding-bottom: 8px; margin-bottom: 16px;">Productos Vendidos</h3>
             
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 14px;">
-                <thead>
-                    <tr style="background: #eee;">
-                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Cód.</th>
-                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Descripción</th>
-                        <th style="padding: 10px; border: 1px solid #ddd; text-align: right;">Precio Unit.</th>
-                        <th style="padding: 10px; border: 1px solid #ddd; text-align: right;">Cant.</th>
-                        <th style="padding: 10px; border: 1px solid #ddd; text-align: right;">Subtotal</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var detail in _sale.Details)
-                    {
+            <div style="overflow-x:auto; margin-bottom: var(--spacing-lg);">
+                <table class="data-table">
+                    <thead>
                         <tr>
-                            <td style="padding: 10px; border: 1px solid #ddd; color: #555;">@detail.ProductId</td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-weight: 500;">@detail.ProductName</td>
-                            <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">$@detail.UnitPrice.ToString("N2")</td>
-                            <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">@detail.Quantity</td>
-                            <td style="padding: 10px; border: 1px solid #ddd; text-align: right; font-weight: bold;">
-                                $@detail.Subtotal.ToString("N2")
-                            </td>
+                            <th>Cód.</th>
+                            <th>Descripción</th>
+                            <th class="align-right">Precio Unit.</th>
+                            <th class="align-right">Cant.</th>
+                            <th class="align-right">Subtotal</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach (var detail in _sale.Details)
+                        {
+                            <tr>
+                                <td class="font-mono text-muted">@detail.ProductId</td>
+                                <td style="font-weight: 500;">@detail.ProductName</td>
+                                <td class="td-numeric">$@detail.UnitPrice.ToString("N2")</td>
+                                <td class="td-numeric">@detail.Quantity</td>
+                                <td class="td-numeric" style="font-weight: bold;">
+                                    $@detail.Subtotal.ToString("N2")
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
 
             <div style="display: flex; justify-content: flex-end;">
-                <div style="width: 250px; background: #fdfdfd; border: 1px solid #ddd; padding: 15px;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; color: #555;">
+                <div style="width: 250px; background: rgba(0,0,0,0.01); border: 1px solid var(--color-border); border-radius: var(--border-radius-md); padding: var(--spacing-md);">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; color: var(--color-text-secondary);">
                         <span>Subtotal:</span>
                         <span>$@_sale.Subtotal.ToString("N2")</span>
                     </div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; color: #555;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; color: var(--color-text-secondary);">
                         <span>IVA (12%):</span>
                         <span>$@_sale.TaxAmount.ToString("N2")</span>
                     </div>
-                    <div style="display: flex; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 1px solid #ccc; font-weight: bold; font-size: 16px; color: #000;">
+                    <div style="display: flex; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--color-border); font-weight: bold; font-size: var(--font-size-lg); color: var(--color-text-primary);">
                         <span>TOTAL:</span>
                         <span>$@_sale.Total.ToString("N2")</span>
                     </div>
@@ -135,23 +142,23 @@
     }
 </div>
 
-<!-- ══ MODAL: PDF PREVIEW ══════════════════════════════════════════════ -->
+<!-- MODAL: PDF PREVIEW -->
 @if (_isPdfPreviewModalOpen)
 {
-    <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 9999;" @onclick="ClosePdfPreviewModal">
-        <div style="background: white; width: 90%; max-width: 1000px; height: 90vh; display: flex; flex-direction: column; border-radius: 4px; overflow: hidden;" @onclick:stopPropagation>
-            <div style="padding: 15px 20px; background: #333; color: white; display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-weight: bold;">Documento de Auditoría</span>
+    <div class="modal-overlay" @onclick="ClosePdfPreviewModal">
+        <div class="modal-box" style="max-width: 1000px; height: 90vh; display: flex; flex-direction: column; padding: 0;" @onclick:stopPropagation>
+            <div class="modal-header" style="background: #111; color: white; padding: 15px 20px; border-radius: 8px 8px 0 0;">
+                <span class="modal-title" style="color: white;">Documento de Auditoría</span>
                 <div style="display: flex; gap: 10px;">
-                    <button style="padding: 6px 12px; background: #1976d2; color: white; border: none; cursor: pointer;" @onclick="DownloadCurrentPreviewPdf">
-                        Descargar PDF
+                    <button class="btn btn--primary btn--sm" @onclick="DownloadCurrentPreviewPdf">
+                        <i class="ph ph-download"></i> Descargar
                     </button>
-                    <button style="padding: 6px 12px; background: transparent; color: white; border: 1px solid white; cursor: pointer;" @onclick="ClosePdfPreviewModal">
-                        Cerrar
+                    <button class="btn btn--ghost btn--icon" style="color: white;" @onclick="ClosePdfPreviewModal">
+                        <i class="ph ph-x"></i>
                     </button>
                 </div>
             </div>
-            <div style="flex: 1; padding: 0;">
+            <div style="flex: 1; padding: 0; background: #525659;">
                 <iframe src="@_pdfPreviewUrl" style="width: 100%; height: 100%; border: none;"></iframe>
             </div>
         </div>

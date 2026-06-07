@@ -19,6 +19,7 @@ public class SaleRepository : ISaleRepository
         => await _appDbContext.Sales
             .AsNoTracking()
             .Include(sale => sale.Customer)
+            .Include(sale => sale.User)
             .Include(sale => sale.Details)
                 .ThenInclude(saleDetail => saleDetail.Product)
             .OrderByDescending(sale => sale.SaleDate)
@@ -28,6 +29,7 @@ public class SaleRepository : ISaleRepository
         => await _appDbContext.Sales
             .AsNoTracking()
             .Include(sale => sale.Customer)
+            .Include(sale => sale.User)
             .Include(sale => sale.Details)
                 .ThenInclude(saleDetail => saleDetail.Product)
             .FirstOrDefaultAsync(sale => sale.SaleId == saleId);
@@ -79,6 +81,7 @@ public class SaleRepository : ISaleRepository
         var query = _appDbContext.Sales
             .AsNoTracking()
             .Include(sale => sale.Customer)
+            .Include(sale => sale.User)
             .Include(sale => sale.Details)
                 .ThenInclude(saleDetail => saleDetail.Product)
             .AsQueryable();

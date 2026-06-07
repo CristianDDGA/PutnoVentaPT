@@ -93,36 +93,7 @@ using (var scope = app.Services.CreateScope())
     var securitySeedService = scope.ServiceProvider.GetRequiredService<SecuritySeedService>();
     await securitySeedService.EnsureSeededAsync();
 
-    // 🔧 RESYNC ORACLE IDENTITY SEQUENCES: Ensures sequences are always ahead of the
-    // highest existing PK, preventing ORA-00001 after seed-data inserts that bypass identity.
-    try
-    {
-        var conn = dbContext.Database.GetDbConnection();
-        await conn.OpenAsync();
-        foreach (var (table, column) in new[]
-        {
-            ("\"Products\"",       "\"ProductId\""),
-            ("\"Customers\"",      "\"CustomerId\""),
-            ("\"Sales\"",          "\"SaleId\""),
-            ("\"SaleDetails\"",    "\"SaleDetailId\""),
-            ("\"Users\"",          "\"UserId\""),
-            ("\"StockMovements\"", "\"StockMovementId\""),
-            ("\"ErrorLogs\"",      "\"ErrorLogId\"")
-        })
-        {
-            await using var cmd = conn.CreateCommand();
-            cmd.CommandText = $"SELECT NVL(MAX({column}), 0) + 1 FROM {table}";
-            var nextVal = (decimal)(await cmd.ExecuteScalarAsync())!;
-            cmd.CommandText = $"ALTER TABLE {table} MODIFY ({column} GENERATED AS IDENTITY (START WITH {(long)nextVal}))";
-            await cmd.ExecuteNonQueryAsync();
-        }
-        await conn.CloseAsync();
-    }
-    catch (Exception ex)
-    {
-        // Log but do not crash startup — sequence issues are non-fatal
-        app.Logger.LogWarning("[Startup] Could not resync Oracle identity sequences: {Msg}", ex.Message);
-    }
+    // SQL Server maneja las identidades automáticamente después del seeding
 }
 
 // Entorno de Desarrollo para Swagger

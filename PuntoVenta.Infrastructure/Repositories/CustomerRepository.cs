@@ -38,6 +38,13 @@ public class CustomerRepository : ICustomerRepository
         return newCustomer;
     }
 
+    public async Task<bool> UpdateAsync(Customer customer)
+    {
+        _appDbContext.Customers.Update(customer);
+        var affectedRows = await _appDbContext.SaveChangesAsync();
+        return affectedRows > 0;
+    }
+
     public async Task<bool> ActivateAsync(int customerId)
         => await UpdateIsActiveAsync(customerId, true);
 

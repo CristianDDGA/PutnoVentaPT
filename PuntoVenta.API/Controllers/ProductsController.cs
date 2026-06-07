@@ -96,7 +96,8 @@ public class ProductsController : ControllerBase
 
         try
         {
-            var updatedProduct = await _productService.UpdateAsync(productId, updateProductDto);
+            var modifiedBy = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? User.Identity?.Name;
+            var updatedProduct = await _productService.UpdateAsync(productId, updateProductDto, modifiedBy);
             return Ok(updatedProduct);
         }
         catch (KeyNotFoundException ex)

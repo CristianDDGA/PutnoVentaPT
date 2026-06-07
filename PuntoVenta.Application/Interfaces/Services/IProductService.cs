@@ -8,8 +8,8 @@ public interface IProductService
     Task<IEnumerable<ProductDto>> GetAllAsync();
     Task<IEnumerable<ProductDto>> SearchByNameAsync(string name);
     Task<ProductDto?>             GetByIdAsync(int productId);
-    Task<ProductDto>              CreateAsync(CreateProductDto dto);
-    Task<ProductDto>              UpdateAsync(int productId, UpdateProductDto dto);
+    Task<ProductDto>              CreateAsync(CreateProductDto createProductDto);
+    Task<ProductDto>              UpdateAsync(int productId, UpdateProductDto updateProductDto, string? modifiedBy = null);
     Task<bool>                   ActivateAsync(int productId);
     Task<bool>                   DeactivateAsync(int productId);
     Task<DeleteResultDto>        DeleteAsync(int productId);

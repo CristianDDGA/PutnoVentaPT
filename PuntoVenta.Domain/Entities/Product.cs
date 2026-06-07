@@ -9,6 +9,8 @@ public class Product
     public decimal Price     { get; private set; }
     public int     Stock     { get; private set; }
     public bool    IsActive  { get; private set; } = true;
+    public string? LastModifiedBy { get; private set; }
+    public DateTime? LastModifiedAt { get; private set; }
 
     private Product() { }
 
@@ -32,7 +34,7 @@ public class Product
         };
     }
 
-    public void Update(string name, decimal price, int stock)
+    public void Update(string name, decimal price, int stock, string? modifiedBy = null)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new DomainException("El nombre del producto es obligatorio.");
@@ -46,6 +48,12 @@ public class Product
         Name = name.Trim();
         Price = price;
         Stock = stock;
+
+        if (!string.IsNullOrWhiteSpace(modifiedBy))
+        {
+            LastModifiedBy = modifiedBy;
+            LastModifiedAt = DateTime.UtcNow;
+        }
     }
 
     // Lógica de negocio: reducir stock al vender

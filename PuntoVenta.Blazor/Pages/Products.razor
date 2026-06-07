@@ -68,6 +68,7 @@
                             <th class="align-right">Precio</th>
                             <th class="align-right">Stock</th>
                             <th class="align-center">Estado</th>
+                            <th class="align-center">Modificado Por</th>
                             @if (_isAdmin)
                             {
                                 <th class="align-center">Acciones</th>
@@ -86,6 +87,9 @@
                                     <span class="badge @(product.IsActive ? "badge--success" : "badge--error")">
                                         @(product.IsActive ? "Activo" : "Inactivo")
                                     </span>
+                                </td>
+                                <td class="align-center" style="font-size: var(--font-size-sm); color: var(--color-text-secondary);">
+                                    @(string.IsNullOrEmpty(product.LastModifiedBy) ? "-" : product.LastModifiedBy)
                                 </td>
                                 @if (_isAdmin)
                                 {
@@ -158,6 +162,12 @@
                             <ValidationMessage For="@(() => _newProduct.Stock)" class="alert alert--error" style="margin-top:4px; padding:4px;" />
                         </div>
                     </div>
+                    @if (_isEditing && !string.IsNullOrWhiteSpace(_lastModifiedBy))
+                    {
+                        <div style="margin-top:var(--spacing-md); font-size:var(--font-size-sm); color:var(--color-text-secondary); display:flex; align-items:center; gap:4px;">
+                            <i class="ph ph-info"></i> Última modificación por: <strong>@_lastModifiedBy</strong> el @(_lastModifiedAt?.ToString("g") ?? "")
+                        </div>
+                    }
                     @if (!string.IsNullOrWhiteSpace(_modalMessage))
                     {
                         <div class="alert @(_isModalError ? "alert--error" : "alert--success")" style="margin-top:var(--spacing-md);">@_modalMessage</div>
@@ -263,12 +273,16 @@
 
     private bool _isEditing;
     private int _editingProductId;
+    private string? _lastModifiedBy;
+    private DateTime? _lastModifiedAt;
 
     private void OpenCreateModal()
     {
         _isCreateModalOpen = true;
         _isEditing = false;
         _modalMessage = null;
+        _lastModifiedBy = null;
+        _lastModifiedAt = null;
         _newProduct.Name = string.Empty;
         _newProduct.Price = 0;
         _newProduct.Stock = 0;
@@ -280,6 +294,8 @@
         _isEditing = true;
         _editingProductId = product.ProductId;
         _modalMessage = null;
+        _lastModifiedBy = product.LastModifiedBy;
+        _lastModifiedAt = product.LastModifiedAt;
         _newProduct.Name = product.Name;
         _newProduct.Price = product.Price;
         _newProduct.Stock = product.Stock;

@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PuntoVenta.Application.Constants;
 using PuntoVenta.Infrastructure.Persistence;
@@ -17,13 +17,13 @@ public class EstresController : ControllerBase
         _seedingService = seedingService;
     }
 
-    [HttpPost("cargar-100k")]
+    [HttpPost("cargar-100")]
     public async Task<IActionResult> CargarDatos()
     {
         try
         {
             await _seedingService.GenerarDatosEstresAsync();
-            return Ok("¡Éxito! Se han insertado 100,000 clientes y 100,000 productos en Oracle.");
+            return Ok("¡Éxito! Se han insertado 100 registros en cada tabla en SQL Server de forma limpia y óptima.");
         }
         catch (Exception ex)
         {

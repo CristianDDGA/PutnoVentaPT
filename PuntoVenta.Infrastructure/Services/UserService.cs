@@ -43,7 +43,7 @@ public class UserService : IUserService
         return savedUser.Adapt<UserDto>();
     }
 
-    public async Task<bool> UpdateAsync(int userId, UpdateUserDto dto)
+    public async Task<bool> UpdateAsync(int userId, UpdateUserDto dto, string? modifiedBy = null)
     {
         var user = await _userRepository.GetByIdAsync(userId);
         if (user is null) return false;
@@ -63,8 +63,8 @@ public class UserService : IUserService
             }
         }
 
-        user.UpdateProfile(dto.FullName, dto.Email);
-        user.ChangeRole(role.RoleId);
+        user.UpdateProfile(dto.FullName, dto.Email, modifiedBy);
+        user.ChangeRole(role.RoleId, modifiedBy);
         await _userRepository.UpdateAsync(user);
         return true;
     }

@@ -49,6 +49,25 @@ public class CustomerService : ICustomerService
         return savedCustomer.Adapt<CustomerDto>();
     }
 
+    public async Task<bool> UpdateAsync(int customerId, UpdateCustomerDto dto, string? modifiedBy = null)
+    {
+        var existingCustomer = await _customerRepository.GetByIdAsync(customerId);
+        if (existingCustomer == null)
+            return false;
+
+        existingCustomer.Update(
+            dto.DocumentNumber,
+            dto.FirstName,
+            dto.LastName,
+            dto.Phone,
+            dto.Address,
+            dto.City,
+            dto.Email,
+            modifiedBy);
+
+        return await _customerRepository.UpdateAsync(existingCustomer);
+    }
+
     public async Task<bool> ActivateAsync(int customerId)
         => await _customerRepository.ActivateAsync(customerId);
 

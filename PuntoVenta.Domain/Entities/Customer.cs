@@ -12,6 +12,8 @@ public class Customer
     public string? City          { get; private set; }
     public string? Email         { get; private set; }
     public bool    IsActive      { get; private set; } = true;
+    public string? LastModifiedBy { get; private set; }
+    public DateTime? LastModifiedAt { get; private set; }
 
     // Constructor para EF Core
     private Customer() { }
@@ -48,6 +50,40 @@ public class Customer
     }
 
     public string FullName => $"{FirstName} {LastName}";
+
+    public void Update(
+        string  documentNumber,
+        string  firstName,
+        string  lastName,
+        string? phone,
+        string? address,
+        string? city,
+        string? email,
+        string? modifiedBy = null)
+    {
+        if (string.IsNullOrWhiteSpace(documentNumber))
+            throw new DomainException("El número de documento (RUC/Cédula) es obligatorio.");
+
+        if (string.IsNullOrWhiteSpace(firstName))
+            throw new DomainException("El nombre del cliente es obligatorio.");
+
+        if (string.IsNullOrWhiteSpace(lastName))
+            throw new DomainException("El apellido del cliente es obligatorio.");
+
+        DocumentNumber = documentNumber.Trim();
+        FirstName      = firstName.Trim();
+        LastName       = lastName.Trim();
+        Phone          = phone?.Trim();
+        Address        = address?.Trim();
+        City           = city?.Trim();
+        Email          = email?.Trim();
+
+        if (!string.IsNullOrWhiteSpace(modifiedBy))
+        {
+            LastModifiedBy = modifiedBy;
+            LastModifiedAt = DateTime.UtcNow;
+        }
+    }
 
     public void Activate() => IsActive = true;
 

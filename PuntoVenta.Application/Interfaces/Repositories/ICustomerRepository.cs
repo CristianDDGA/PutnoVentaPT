@@ -8,6 +8,7 @@ public interface ICustomerRepository
     Task<IEnumerable<Customer>> SearchByLastNameAsync(string lastName);
     Task<Customer?>             GetByIdAsync(int customerId);
     Task<Customer>              AddAsync(Customer customer);
+    Task<bool>                  UpdateAsync(Customer customer);
     Task<bool>                  ActivateAsync(int customerId);
     Task<int> GetTotalCustomersCountAsync();
     Task<bool>                  DeactivateAsync(int customerId);

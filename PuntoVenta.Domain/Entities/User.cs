@@ -14,6 +14,10 @@ public class User
     public int    FailedLoginAttempts { get; private set; } = 0;
     public bool   IsLocked            { get; private set; } = false;
 
+    // Audit fields
+    public string? LastModifiedBy { get; private set; }
+    public DateTime? LastModifiedAt { get; private set; }
+
     public Role Role { get; private set; } = null!;
 
     private User() { }
@@ -42,13 +46,19 @@ public class User
         };
     }
 
-    public void UpdateProfile(string fullName, string? email = null)
+    public void UpdateProfile(string fullName, string? email = null, string? modifiedBy = null)
     {
         if (string.IsNullOrWhiteSpace(fullName))
             throw new ArgumentException("El nombre completo es obligatorio.", nameof(fullName));
 
         FullName = fullName.Trim();
         Email = email?.Trim();
+
+        if (!string.IsNullOrWhiteSpace(modifiedBy))
+        {
+            LastModifiedBy = modifiedBy;
+            LastModifiedAt = DateTime.UtcNow;
+        }
     }
 
     public void ChangePasswordHash(string passwordHash)
@@ -59,12 +69,18 @@ public class User
         PasswordHash = passwordHash;
     }
 
-    public void ChangeRole(int roleId)
+    public void ChangeRole(int roleId, string? modifiedBy = null)
     {
         if (roleId <= 0)
             throw new ArgumentException("El rol es obligatorio.", nameof(roleId));
 
         RoleId = roleId;
+
+        if (!string.IsNullOrWhiteSpace(modifiedBy))
+        {
+            LastModifiedBy = modifiedBy;
+            LastModifiedAt = DateTime.UtcNow;
+        }
     }
 
     public void Activate() => IsActive = true;

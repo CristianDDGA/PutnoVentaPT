@@ -14,13 +14,16 @@ public class CustomersController : ControllerBase
 {
     private readonly ICustomerService            _customerService;
     private readonly IValidator<CreateCustomerDto> _createCustomerValidator;
+    private readonly IValidator<UpdateCustomerDto> _updateCustomerValidator;
 
     public CustomersController(
         ICustomerService             customerService,
-        IValidator<CreateCustomerDto> createCustomerValidator)
+        IValidator<CreateCustomerDto> createCustomerValidator,
+        IValidator<UpdateCustomerDto> updateCustomerValidator)
     {
         _customerService         = customerService;
         _createCustomerValidator = createCustomerValidator;
+        _updateCustomerValidator = updateCustomerValidator;
     }
 
     [HttpGet]
@@ -79,6 +82,20 @@ public class CustomersController : ControllerBase
 
         var savedCustomer = await _customerService.CreateAsync(createCustomerDto);
         return CreatedAtAction(nameof(GetById), new { customerId = savedCustomer.CustomerId }, savedCustomer);
+    }
+
+    [HttpPut("{customerId:int}")]
+    [Authorize(Roles = AppRoles.Admin)]
+    public async Task<IActionResult> Update(int customerId, [FromBody] UpdateCustomerDto updateCustomerDto)
+    {
+        var validationResult = await _updateCustomerValidator.ValidateAsync(updateCustomerDto);
+
+        if (!validationResult.IsValid)
+            return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
+
+        var modifiedBy = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? User.Identity?.Name;
+        var success = await _customerService.UpdateAsync(customerId, updateCustomerDto, modifiedBy);
+        return success ? NoContent() : NotFound($"Customer with id {customerId} not found.");
     }
 
     [HttpPut("{customerId:int}/activate")]

@@ -8,7 +8,8 @@ public interface ICustomerService
     Task<IEnumerable<CustomerDto>> GetAllAsync();
     Task<IEnumerable<CustomerDto>> SearchByLastNameAsync(string lastName);
     Task<CustomerDto?>             GetByIdAsync(int customerId);
-    Task<CustomerDto>              CreateAsync(CreateCustomerDto dto);
+    Task<CustomerDto>              CreateAsync(CreateCustomerDto createCustomerDto);
+    Task<bool>                     UpdateAsync(int customerId, UpdateCustomerDto dto, string? modifiedBy = null);
     Task<bool>                     ActivateAsync(int customerId);
     Task<bool>                     DeactivateAsync(int customerId);
     Task<DeleteResultDto>          DeleteAsync(int customerId);

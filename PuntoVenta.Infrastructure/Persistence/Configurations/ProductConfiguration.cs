@@ -16,9 +16,9 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
             .IsRequired()
             .HasMaxLength(150);
 
-        // Ajustado para compatibilidad nativa con Oracle (NUMBER en lugar de decimal)
+        // Ajustado para compatibilidad nativa con SQL Server (decimal en lugar de NUMBER)
         productBuilder.Property(product => product.Price)
-            .HasColumnType("NUMBER(10,2)");
+            .HasColumnType("decimal(10,2)");
 
         productBuilder.Property(product => product.Stock)
             .IsRequired();

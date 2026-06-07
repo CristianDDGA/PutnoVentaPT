@@ -45,7 +45,7 @@ public class ProductService : IProductService
         return savedProduct.Adapt<ProductDto>();
     }
 
-    public async Task<ProductDto> UpdateAsync(int productId, UpdateProductDto updateProductDto)
+    public async Task<ProductDto> UpdateAsync(int productId, UpdateProductDto updateProductDto, string? modifiedBy = null)
     {
         var existingProduct = await _productRepository.GetByIdTrackedAsync(productId);
         if (existingProduct == null)
@@ -54,7 +54,8 @@ public class ProductService : IProductService
         existingProduct.Update(
             updateProductDto.Name,
             updateProductDto.Price,
-            updateProductDto.Stock);
+            updateProductDto.Stock,
+            modifiedBy);
 
         await _productRepository.UpdateAsync(existingProduct);
         return existingProduct.Adapt<ProductDto>();

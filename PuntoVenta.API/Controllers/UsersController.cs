@@ -57,7 +57,8 @@ public class UsersController : ControllerBase
         if (!validationResult.IsValid)
             return BadRequest(validationResult.Errors.Select(error => error.ErrorMessage));
 
-        var success = await _userService.UpdateAsync(userId, dto);
+        var modifiedBy = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? User.Identity?.Name;
+        var success = await _userService.UpdateAsync(userId, dto, modifiedBy);
         return success ? NoContent() : NotFound($"User with id {userId} not found.");
     }
 

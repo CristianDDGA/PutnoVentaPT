@@ -272,6 +272,14 @@
                             <span class="product-info-val">@_selectedSale.SellerName</span>
                         </div>
                     }
+                    @if (!string.IsNullOrEmpty(_selectedSale.CreatedByUsername))
+                    {
+                        <div class="product-info-separator"></div>
+                        <div class="product-info-item">
+                            <span class="product-info-key">Generado por:</span>
+                            <span class="product-info-val">@_selectedSale.CreatedByUsername</span>
+                        </div>
+                    }
                 </div>
 
                 <!-- Detail lines -->
