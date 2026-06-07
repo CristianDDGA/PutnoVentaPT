@@ -1,3 +1,6 @@
+@implements IDisposable
+@inject PuntoVenta.Blazor.Services.UserModeService UserModeService
+
 @if (_isVisible)
 {
     <div class="modal-overlay confirm-modal-overlay">
@@ -17,7 +20,7 @@
 
             <div class="confirm-modal-actions">
                 <button class="btn btn--ghost" @onclick="OnCancel">Cancelar</button>
-                <button class="btn btn--danger-solid" @onclick="OnConfirm">@ConfirmText</button>
+                <button @ref="_confirmButton" class="btn btn--danger-solid" @onclick="OnConfirm">@ConfirmText</button>
             </div>
 
         </div>
@@ -31,17 +34,51 @@
 
     private bool _isVisible = false;
     private TaskCompletionSource<bool>? _tcs;
+    private ElementReference _confirmButton;
+
+    public bool IsVisible => _isVisible;
+
+    protected override void OnInitialized()
+    {
+        UserModeService.OnShortcutPressed += HandleShortcut;
+    }
+
+    public void Dispose()
+    {
+        UserModeService.OnShortcutPressed -= HandleShortcut;
+    }
+
+    private void HandleShortcut(string key)
+    {
+        if (!_isVisible) return;
+
+        if (key == "Enter")
+        {
+            InvokeAsync(() => { OnConfirm(); StateHasChanged(); });
+        }
+        else if (key == "Escape")
+        {
+            InvokeAsync(() => { OnCancel(); StateHasChanged(); });
+        }
+    }
 
     /// <summary>Shows the modal and returns true if user confirms, false if cancelled.</summary>
-    public Task<bool> ShowAsync(string message, string title = "¿Confirmar acción?", string confirmText = "Confirmar")
+    public async Task<bool> ShowAsync(string message, string title = "¿Confirmar acción?", string confirmText = "Confirmar")
     {
+        if (_isVisible && _tcs != null) return await _tcs.Task;
+
         Title       = title;
         Message     = message;
         ConfirmText = confirmText;
         _isVisible  = true;
         _tcs        = new TaskCompletionSource<bool>();
         StateHasChanged();
-        return _tcs.Task;
+        
+        // Auto-focus the confirm button so 'Enter' works even if an input was focused
+        await Task.Delay(50);
+        try { await _confirmButton.FocusAsync(); } catch { }
+
+        return await _tcs.Task;
     }
 
     private void OnConfirm()

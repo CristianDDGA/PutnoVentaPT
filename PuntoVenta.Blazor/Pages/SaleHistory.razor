@@ -7,6 +7,7 @@
 @inject IJSRuntime     JSRuntime
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager NavigationManager
+@inject UserModeService UserModeService
 
 <PageTitle>Historial de Facturas — Punto de Venta</PageTitle>
 
@@ -396,9 +397,25 @@
 
     protected override async Task OnInitializedAsync()
     {
+        UserModeService.OnShortcutPressed += HandleShortcut;
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         _isAdmin = authState.User.IsInRole("Admin");
         await LoadPageAsync(1);
+    }
+
+    private void HandleShortcut(string key)
+    {
+        if (key == "Escape" && !_confirmModal.IsVisible)
+        {
+            if (_isPdfPreviewModalOpen)
+            {
+                InvokeAsync(() => { ClosePdfPreviewModal(); StateHasChanged(); });
+            }
+            else if (_isDetailModalOpen)
+            {
+                InvokeAsync(() => { CloseDetailModal(); StateHasChanged(); });
+            }
+        }
     }
 
     // ── Search input handlers ───────────────────────────────────────────
@@ -440,6 +457,7 @@
 
     public void Dispose()
     {
+        UserModeService.OnShortcutPressed -= HandleShortcut;
         _debounceTimer?.Dispose();
     }
 

@@ -3,6 +3,8 @@
 @using PuntoVenta.Blazor.Services
 @inject NavigationManager Navigation
 @inject AuthSessionService AuthSessionService
+@inject UserModeService UserModeService
+@inject IJSRuntime JSRuntime
 @implements IDisposable
 
 <div class="layout-wrapper">
@@ -41,6 +43,23 @@
                 </div>
             </NotAuthorized>
         </AuthorizeView>
+
+        <!-- Premium Theme Selector -->
+        <div class="sidebar-widget-area">
+            <!-- Theme Toggle -->
+            <div class="theme-widget">
+                <button class="theme-toggle-btn" @onclick="ToggleThemeAsync" title="Cambiar tema visual">
+                    @if (_isDarkTheme)
+                    {
+                        <span><i class="ph ph-sun"></i> Modo Claro</span>
+                    }
+                    else
+                    {
+                        <span><i class="ph ph-moon"></i> Modo Oscuro</span>
+                    }
+                </button>
+            </div>
+        </div>
 
         <!-- Navigation Menu -->
         <nav class="sidebar-nav menu" aria-label="Menú principal">
@@ -108,16 +127,6 @@
 
         <!-- Footer / Clock -->
         <div class="sidebar-footer" aria-label="Acciones de usuario">
-            <button class="footer-btn" type="button" aria-label="Perfil (visual)">
-                <span class="footer-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="8" r="4"></circle>
-                        <path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"></path>
-                    </svg>
-                </span>
-                <span class="footer-label">Perfil</span>
-            </button>
-
             <button class="footer-btn footer-btn-logout" type="button" aria-label="Cerrar sesión" @onclick="LogoutAsync">
                 <span class="footer-icon" aria-hidden="true">
                     <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
@@ -155,6 +164,7 @@
 @code {
     private string _currentDateTime = string.Empty;
     private Timer? _clockTimer;
+    private bool _isDarkTheme = false;
 
     protected override void OnInitialized()
     {
@@ -164,6 +174,69 @@
             UpdateClock();
             InvokeAsync(StateHasChanged);
         }, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Registrar puente de teclado
+            var dotNetRef = DotNetObjectReference.Create(this);
+            await JSRuntime.InvokeVoidAsync("pvKeyboardBridge.register", dotNetRef);
+
+            // Inicializar tema claro/oscuro
+            var savedTheme = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "pv_theme");
+            _isDarkTheme = savedTheme == "dark";
+            await ApplyThemeAsync();
+            
+            StateHasChanged();
+        }
+    }
+
+    private async Task ToggleThemeAsync()
+    {
+        _isDarkTheme = !_isDarkTheme;
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "pv_theme", _isDarkTheme ? "dark" : "light");
+            await ApplyThemeAsync();
+        }
+        catch { }
+    }
+
+    private async Task ApplyThemeAsync()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("document.body.classList.toggle", "dark-theme", _isDarkTheme);
+        }
+        catch { }
+    }
+
+    [JSInvokable]
+    public void OnGlobalPageShortcut(int pageNum)
+    {
+        var target = pageNum switch
+        {
+            1 => "/",
+            2 => "/nueva-venta",
+            3 => "/historial",
+            4 => "/auditoria",
+            5 => "/clientes",
+            6 => "/productos",
+            7 => "/users",
+            _ => null
+        };
+        if (target != null)
+        {
+            Navigation.NavigateTo(target);
+        }
+    }
+
+    [JSInvokable]
+    public void OnGlobalShortcut(string key)
+    {
+        UserModeService.TriggerShortcut(key);
     }
 
     private void UpdateClock()
@@ -176,5 +249,7 @@
     }
 
     public void Dispose()
-        => _clockTimer?.Dispose();
+    {
+        _clockTimer?.Dispose();
+    }
 }

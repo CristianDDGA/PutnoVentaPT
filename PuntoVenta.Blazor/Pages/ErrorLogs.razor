@@ -2,7 +2,9 @@
 @attribute [Authorize(Roles = "Admin")]
 @using PuntoVenta.Blazor.Models
 @using PuntoVenta.Blazor.Services
+@implements IDisposable
 @inject ErrorLogApiService ErrorLogApiService
+@inject UserModeService UserModeService
 
 <PageTitle>Registro de Errores — Punto de Venta</PageTitle>
 
@@ -152,7 +154,21 @@
 
     protected override async Task OnInitializedAsync()
     {
+        UserModeService.OnShortcutPressed += HandleShortcut;
         await LoadPageAsync(1);
+    }
+
+    public void Dispose()
+    {
+        UserModeService.OnShortcutPressed -= HandleShortcut;
+    }
+
+    private void HandleShortcut(string key)
+    {
+        if (key == "Escape" && _isDetailModalOpen)
+        {
+            InvokeAsync(() => { CloseDetailModal(); StateHasChanged(); });
+        }
     }
 
     private async Task LoadPageAsync(int page)

@@ -6,12 +6,56 @@
 @inject ProductApiService  ProductApiService
 @inject SaleApiService     SaleApiService
 @inject IJSRuntime         JSRuntime
+@inject UserModeService    UserModeService
 @implements IDisposable
 @using System.Timers
 
 <PageTitle>Nueva Venta — Punto de Venta</PageTitle>
 
 <div class="section-gap">
+
+    <!-- ══ QUICK GUIDE ══════════════════════════════════════════════════ -->
+    <div style="background: var(--color-bg-glass); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--spacing-md) var(--spacing-lg); margin-bottom: var(--spacing-lg); display: flex; align-items: center; gap: var(--spacing-lg); overflow-x: auto;">
+        
+        <div style="display: flex; align-items: center; gap: var(--spacing-sm); white-space: nowrap;">
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(220, 38, 38, 0.15); color: var(--color-accent); border: 1px solid var(--color-accent); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: var(--font-size-sm);">1</div>
+            <div>
+                <div style="font-weight: 600; font-size: var(--font-size-sm); color: var(--color-text-primary);">Cliente</div>
+                <div style="font-size: 11px; color: var(--color-text-secondary);"><kbd style="background: var(--color-bg-elevated); padding: 2px 4px; border-radius: 4px; border: 1px solid var(--color-border);">F2</kbd> Buscar cliente</div>
+            </div>
+        </div>
+
+        <div style="flex: 1; height: 1px; background: var(--color-border); min-width: 10px;"></div>
+
+        <div style="display: flex; align-items: center; gap: var(--spacing-sm); white-space: nowrap;">
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(220, 38, 38, 0.15); color: var(--color-accent); border: 1px solid var(--color-accent); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: var(--font-size-sm);">2</div>
+            <div>
+                <div style="font-weight: 600; font-size: var(--font-size-sm); color: var(--color-text-primary);">Productos</div>
+                <div style="font-size: 11px; color: var(--color-text-secondary);"><kbd style="background: var(--color-bg-elevated); padding: 2px 4px; border-radius: 4px; border: 1px solid var(--color-border);">F4</kbd> Buscar producto</div>
+            </div>
+        </div>
+
+        <div style="flex: 1; height: 1px; background: var(--color-border); min-width: 10px;"></div>
+
+        <div style="display: flex; align-items: center; gap: var(--spacing-sm); white-space: nowrap;">
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(220, 38, 38, 0.15); color: var(--color-accent); border: 1px solid var(--color-accent); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: var(--font-size-sm);">3</div>
+            <div>
+                <div style="font-weight: 600; font-size: var(--font-size-sm); color: var(--color-text-primary);">Detalle</div>
+                <div style="font-size: 11px; color: var(--color-text-secondary);"><kbd style="background: var(--color-bg-elevated); padding: 2px 4px; border-radius: 4px; border: 1px solid var(--color-border);">F6</kbd> Agregar al detalle</div>
+            </div>
+        </div>
+
+        <div style="flex: 1; height: 1px; background: var(--color-border); min-width: 10px;"></div>
+
+        <div style="display: flex; align-items: center; gap: var(--spacing-sm); white-space: nowrap;">
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(220, 38, 38, 0.15); color: var(--color-accent); border: 1px solid var(--color-accent); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: var(--font-size-sm);">4</div>
+            <div>
+                <div style="font-weight: 600; font-size: var(--font-size-sm); color: var(--color-text-primary);">Confirmar</div>
+                <div style="font-size: 11px; color: var(--color-text-secondary);"><kbd style="background: var(--color-bg-elevated); padding: 2px 4px; border-radius: 4px; border: 1px solid var(--color-border);">F9</kbd> Generar factura</div>
+            </div>
+        </div>
+
+    </div>
 
     <!-- ══ CUSTOMER SECTION ══════════════════════════════════════════════ -->
     <div class="card">
@@ -56,6 +100,7 @@
     </div>
 
     <!-- ══ PRODUCT SEARCH SECTION ════════════════════════════════════════ -->
+    <!-- ══ PRODUCT SEARCH SECTION ════════════════════════════════════════ -->
     <div class="card">
         <div class="card-header">
             <span class="card-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg></span>
@@ -95,17 +140,18 @@
             }
         </div>
 
-        <div class="flex gap-md" style="align-items:flex-end; flex-wrap:wrap;">
-            <div class="field-group">
+        <div class="flex gap-md" style="align-items:flex-end; flex-wrap:wrap; width: 100%;">
+            <div class="field-group" style="padding: 4px; border-radius: var(--radius-sm);">
                 <label class="field-label">Cantidad</label>
                 <div style="display:flex; gap:4px;">
-                    <input class="field-input field-input--numeric"
+                    <input id="product-qty-input" class="field-input field-input--numeric"
                            type="number"
                            min="1"
                            max="@(_selectedProduct?.Stock ?? 1)"
                            style="width:80px;"
                            value="@_selectedQuantity"
-                           @oninput="OnSelectionQuantityInput" />
+                           @oninput="OnSelectionQuantityInput"
+                           @onkeydown="HandleQuantityInputKeyDown" />
                     <button class="btn btn--xs btn--max" 
                             style="height:38px;"
                             type="button"
@@ -116,7 +162,7 @@
                     </button>
                 </div>
             </div>
-            <button class="btn btn--success" @onclick="AddProductToSale" disabled="@(_selectedProduct is null || _selectedProduct?.Stock <= 0)">
+            <button class="btn btn--success" @onclick="AddProductToSaleAsync" disabled="@(_selectedProduct is null || _selectedProduct?.Stock <= 0)">
                 <i class="ph ph-plus-circle"></i> Agregar al detalle
             </button>
             @if (_selectedProduct is not null && _selectedProduct.Stock <= 0)
@@ -797,6 +843,9 @@
         _autoSaveDebounceTimer = new Timer(1500);
         _autoSaveDebounceTimer.Elapsed += async (sender, e) => await PerformAutoSaveAsync();
         _autoSaveDebounceTimer.AutoReset = false;
+
+        // Suscribirse a atajos de teclado
+        UserModeService.OnShortcutPressed += HandleShortcut;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -922,6 +971,8 @@
         _saleSearchDebounceTimer?.Dispose();
         _autoSaveDebounceTimer?.Stop();
         _autoSaveDebounceTimer?.Dispose();
+
+        UserModeService.OnShortcutPressed -= HandleShortcut;
     }
 
     // ── Set quantity to max stock (Fetch latest from API) ────────────────
@@ -1381,6 +1432,217 @@
         {
             _saleHistoryPageSize = size;
             await LoadSaleHistoryPageAsync(1);
+        }
+    }
+
+    // ── Keyboard support and user modes C# implementation ───────────────
+    private string _directCustomerDoc = string.Empty;
+    private int? _directProductId;
+
+    private async void HandleShortcut(string key)
+    {
+        await InvokeAsync(async () => {
+            if (key == "F2")
+            {
+                if (_isProductModalOpen || _isSaleHistoryModalOpen) return;
+                await OpenCustomerModal();
+                StateHasChanged();
+            }
+            else if (key == "F4")
+            {
+                if (_isCustomerModalOpen || _isSaleHistoryModalOpen) return;
+                await OpenProductModal();
+                StateHasChanged();
+            }
+            else if (key == "F6")
+            {
+                await AddProductToSaleAsync();
+                StateHasChanged();
+            }
+            else if (key == "F8")
+            {
+                await CancelSale();
+                StateHasChanged();
+            }
+            else if (key == "F9")
+            {
+                await CreateSale();
+                StateHasChanged();
+            }
+            else if (key == "Escape")
+            {
+                if (_isCustomerModalOpen)
+                {
+                    CloseCustomerModal();
+                    StateHasChanged();
+                }
+                else if (_isProductModalOpen)
+                {
+                    CloseProductModal();
+                    StateHasChanged();
+                }
+                else if (_isSaleHistoryModalOpen)
+                {
+                    CloseSaleHistoryModal();
+                    StateHasChanged();
+                }
+                else if (_isPdfPreviewModalOpen)
+                {
+                    ClosePdfPreviewModal();
+                    StateHasChanged();
+                }
+            }
+            else if (key == "ArrowDown")
+            {
+                MoveModalSelection(1);
+            }
+            else if (key == "ArrowUp")
+            {
+                MoveModalSelection(-1);
+            }
+            else if (key == "Enter")
+            {
+                SelectActiveModalRow();
+            }
+        });
+    }
+
+    private async Task HandleDirectCustomerKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            _errorMessage = string.Empty;
+            _successMessage = string.Empty;
+
+            if (string.IsNullOrWhiteSpace(_directCustomerDoc))
+            {
+                _errorMessage = "Por favor, ingrese un documento válido.";
+                await JSRuntime.InvokeVoidAsync("pvKeyboardBridge.triggerSound", "error");
+                return;
+            }
+
+            var result = await CustomerApiService.SearchPagedAsync(
+                customerId: null,
+                documentNumber: _directCustomerDoc,
+                lastName: null,
+                page: 1,
+                pageSize: 1,
+                onlyActive: true);
+
+            if (result != null && result.Items.Count > 0)
+            {
+                _selectedCustomer = result.Items[0];
+                _directCustomerDoc = string.Empty;
+                await JSRuntime.InvokeVoidAsync("pvKeyboardBridge.triggerSound", "success");
+                _errorMessage = string.Empty;
+                TriggerAutoSave();
+                
+                await FocusElement("product-id-input");
+            }
+            else
+            {
+                _errorMessage = $"No se encontró ningún cliente activo con el documento '{_directCustomerDoc}'.";
+                await JSRuntime.InvokeVoidAsync("pvKeyboardBridge.triggerSound", "error");
+            }
+        }
+    }
+
+    private async Task HandleDirectProductKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            _errorMessage = string.Empty;
+            _successMessage = string.Empty;
+
+            if (!_directProductId.HasValue || _directProductId.Value <= 0)
+            {
+                _errorMessage = "Por favor, ingrese un ID de producto válido.";
+                await JSRuntime.InvokeVoidAsync("pvKeyboardBridge.triggerSound", "error");
+                return;
+            }
+
+            var product = await ProductApiService.GetByIdAsync(_directProductId.Value);
+
+            if (product != null && product.Stock > 0 && product.IsActive)
+            {
+                _selectedProduct = product;
+                _selectedQuantity = 1;
+                _directProductId = null;
+                await JSRuntime.InvokeVoidAsync("pvKeyboardBridge.triggerSound", "success");
+                
+                await FocusElement("product-qty-input");
+            }
+            else if (product != null && product.Stock <= 0)
+            {
+                _errorMessage = $"El producto '{product.Name}' está agotado.";
+                await JSRuntime.InvokeVoidAsync("pvKeyboardBridge.triggerSound", "error");
+            }
+            else
+            {
+                _errorMessage = $"No se encontró ningún producto activo con ID {_directProductId.Value}.";
+                await JSRuntime.InvokeVoidAsync("pvKeyboardBridge.triggerSound", "error");
+            }
+        }
+    }
+
+    private async Task HandleQuantityInputKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            if (_selectedProduct != null && _selectedQuantity > 0 && _selectedQuantity <= _selectedProduct.Stock)
+            {
+                await AddProductToSaleAsync();
+            }
+        }
+    }
+
+    private async Task AddProductToSaleAsync()
+    {
+        AddProductToSale();
+    }
+
+    private async Task FocusElement(string id)
+    {
+        await JSRuntime.InvokeVoidAsync("pvKeyboardBridge.focusElement", id);
+    }
+
+    private void MoveModalSelection(int direction)
+    {
+        if (_isCustomerModalOpen)
+        {
+            if (_customerPagedResult?.Items == null || _customerPagedResult.Items.Count == 0) return;
+            int currentIndex = _selectedCustomerRow == null ? -1 : _customerPagedResult.Items.IndexOf(_selectedCustomerRow);
+            int newIndex = currentIndex + direction;
+            if (newIndex < 0) newIndex = 0;
+            if (newIndex >= _customerPagedResult.Items.Count) newIndex = _customerPagedResult.Items.Count - 1;
+            _selectedCustomerRow = _customerPagedResult.Items[newIndex];
+            StateHasChanged();
+        }
+        else if (_isProductModalOpen)
+        {
+            if (_productPagedResult?.Items == null || _productPagedResult.Items.Count == 0) return;
+            int currentIndex = _selectedProductRow == null ? -1 : _productPagedResult.Items.IndexOf(_selectedProductRow);
+            int newIndex = currentIndex + direction;
+            if (newIndex < 0) newIndex = 0;
+            if (newIndex >= _productPagedResult.Items.Count) newIndex = _productPagedResult.Items.Count - 1;
+            _selectedProductRow = _productPagedResult.Items[newIndex];
+            StateHasChanged();
+        }
+    }
+
+    private void SelectActiveModalRow()
+    {
+        if (_isCustomerModalOpen && _selectedCustomerRow != null)
+        {
+            SelectCustomerAndClose(_selectedCustomerRow);
+        }
+        else if (_isProductModalOpen && _selectedProductRow != null)
+        {
+            if (_selectedProductRow.Stock > 0)
+            {
+                SelectProductAndClose(_selectedProductRow);
+                _ = FocusElement("product-qty-input");
+            }
         }
     }
 }

@@ -2,8 +2,10 @@
 @attribute [Authorize]
 @using PuntoVenta.Blazor.Models
 @using PuntoVenta.Blazor.Services
+@implements IDisposable
 @inject SaleApiService SaleApiService
 @inject IJSRuntime JSRuntime
+@inject UserModeService UserModeService
 
 <PageTitle>Auditoría — Punto de Venta</PageTitle>
 
@@ -176,6 +178,24 @@
     private string _pdfPreviewUrl = string.Empty;
     private string _pdfPreviewBase64 = string.Empty;
     private string _pdfPreviewFileName = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        UserModeService.OnShortcutPressed += HandleShortcut;
+    }
+
+    public void Dispose()
+    {
+        UserModeService.OnShortcutPressed -= HandleShortcut;
+    }
+
+    private void HandleShortcut(string key)
+    {
+        if (key == "Escape" && _isPdfPreviewModalOpen)
+        {
+            InvokeAsync(() => { ClosePdfPreviewModal(); StateHasChanged(); });
+        }
+    }
 
     private async Task HandleKeyDown(KeyboardEventArgs e)
     {

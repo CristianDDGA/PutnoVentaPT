@@ -6,6 +6,7 @@
 @using PuntoVenta.Blazor.Services
 @inject CustomerApiService CustomerApiService
 @inject AuthenticationStateProvider AuthStateProvider
+@inject UserModeService UserModeService
 
 <PageTitle>Clientes — Punto de Venta</PageTitle>
 
@@ -147,7 +148,7 @@
         <div class="modal-box" style="max-width: 600px;" @onclick:stopPropagation>
             <div class="modal-header">
                 <span class="modal-title">@(_isEditing ? "Editar cliente" : "Nuevo cliente")</span>
-                <button class="btn btn--ghost btn--icon" @onclick="CloseCreateModal"><i class="ph ph-x"></i></button>
+                <button class="btn btn--ghost btn--icon" @onclick="CloseCreateModalWithConfirmAsync"><i class="ph ph-x"></i></button>
             </div>
             <EditForm Model="_newCustomer" OnValidSubmit="SaveCustomerAsync">
                 <DataAnnotationsValidator />
@@ -201,7 +202,7 @@
                     }
                 </div>
                 <div class="modal-footer" style="justify-content: flex-end;">
-                    <button type="button" class="btn btn--ghost" @onclick="CloseCreateModal">Cancelar</button>
+                    <button type="button" class="btn btn--ghost" @onclick="CloseCreateModalWithConfirmAsync">Cancelar</button>
                     <button type="submit" class="btn btn--success" disabled="@_isBusy">@(_isEditing ? "Guardar cambios" : "Crear cliente")</button>
                 </div>
             </EditForm>
@@ -272,13 +273,23 @@
 
     public void Dispose()
     {
+        UserModeService.OnShortcutPressed -= HandleShortcut;
         _debounceTimer?.Dispose();
     }
 
     protected override async Task OnInitializedAsync()
     {
+        UserModeService.OnShortcutPressed += HandleShortcut;
         await ResolveRoleAsync();
         await LoadPageAsync(1);
+    }
+
+    private async void HandleShortcut(string key)
+    {
+        if (key == "Escape" && _isCreateModalOpen && !_confirmModal.IsVisible)
+        {
+            await InvokeAsync(CloseCreateModalWithConfirmAsync);
+        }
     }
 
     private async Task ResolveRoleAsync()
@@ -344,6 +355,16 @@
     private void CloseCreateModal()
     {
         _isCreateModalOpen = false;
+    }
+
+    private async Task CloseCreateModalWithConfirmAsync()
+    {
+        var confirmed = await _confirmModal.ShowAsync("¿Está seguro de descartar los cambios? Se perderán los datos ingresados.", "Cancelar edición", "Sí, descartar");
+        if (confirmed)
+        {
+            _isCreateModalOpen = false;
+            StateHasChanged();
+        }
     }
 
     private async Task SaveCustomerAsync()

@@ -1,9 +1,11 @@
 @page "/users"
 @attribute [Authorize(Roles = "Admin")]
+@implements IDisposable
 @using PuntoVenta.Blazor.Models
 @using PuntoVenta.Blazor.Services
 @inject UserApiService UserApiService
 @inject AuthSessionService AuthSessionService
+@inject UserModeService UserModeService
 
 <PageTitle>Administración de Usuarios — Punto de Venta</PageTitle>
 
@@ -135,7 +137,7 @@
                     <i class="@(_isEditing ? "ph ph-pencil" : "ph ph-user-plus")"></i> 
                     @(_isEditing ? "Editar Usuario" : "Crear Nuevo Usuario")
                 </span>
-                <button class="btn btn--ghost btn--icon" @onclick="CloseModal"><i class="ph ph-x"></i></button>
+                <button class="btn btn--ghost btn--icon" @onclick="CloseModalWithConfirmAsync"><i class="ph ph-x"></i></button>
             </div>
             
             @if (_isEditing)
@@ -180,7 +182,7 @@
                         }
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn--ghost" @onclick="CloseModal">Cancelar</button>
+                        <button type="button" class="btn btn--ghost" @onclick="CloseModalWithConfirmAsync">Cancelar</button>
                         <button type="submit" class="btn btn--primary" disabled="@_isSaving">
                             @if (_isSaving) { <text><i class="ph ph-hourglass-high"></i> Guardando...</text> } else { <text><i class="ph ph-floppy-disk"></i> Guardar Cambios</text> }
                         </button>
@@ -242,7 +244,7 @@
                 </div>
                 
                 <div class="modal-footer">
-                    <button type="button" class="btn btn--ghost" @onclick="CloseModal">Cancelar</button>
+                    <button type="button" class="btn btn--ghost" @onclick="CloseModalWithConfirmAsync">Cancelar</button>
                     <button type="submit" class="btn btn--primary" disabled="@_isSaving">
                         @if (_isSaving) { <text><i class="ph ph-hourglass-high"></i> Guardando...</text> } else { <text><i class="ph ph-floppy-disk"></i> Guardar Usuario</text> }
                     </button>
@@ -285,12 +287,26 @@
 
     protected override async Task OnInitializedAsync()
     {
+        UserModeService.OnShortcutPressed += HandleShortcut;
         var session = await AuthSessionService.GetCurrentSessionAsync();
         if (session is not null)
         {
             _currentUserId = session.UserId;
         }
         await LoadDataAsync();
+    }
+
+    public void Dispose()
+    {
+        UserModeService.OnShortcutPressed -= HandleShortcut;
+    }
+
+    private async void HandleShortcut(string key)
+    {
+        if (key == "Escape" && _isModalOpen && _confirmModal != null && !_confirmModal.IsVisible)
+        {
+            await InvokeAsync(CloseModalWithConfirmAsync);
+        }
     }
 
     private async Task LoadDataAsync()
@@ -331,6 +347,17 @@
     private void CloseModal()
     {
         _isModalOpen = false;
+    }
+
+    private async Task CloseModalWithConfirmAsync()
+    {
+        if (_confirmModal == null) return;
+        var confirmed = await _confirmModal.ShowAsync("¿Está seguro de descartar los cambios? Se perderán los datos ingresados.", "Cancelar edición", "Sí, descartar");
+        if (confirmed)
+        {
+            _isModalOpen = false;
+            StateHasChanged();
+        }
     }
 
     private async Task HandleCreateUser()
