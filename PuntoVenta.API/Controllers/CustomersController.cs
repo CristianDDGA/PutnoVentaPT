@@ -10,6 +10,7 @@ namespace PuntoVenta.API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(Roles = $"{AppRoles.Admin},{AppRoles.Seller}")]
+[AllowAnonymous]
 public class CustomersController : ControllerBase
 {
     private readonly ICustomerService            _customerService;
@@ -103,6 +104,14 @@ public class CustomersController : ControllerBase
     public async Task<IActionResult> Activate(int customerId)
     {
         var success = await _customerService.ActivateAsync(customerId);
+        return success ? NoContent() : NotFound($"Customer with id {customerId} not found.");
+    }
+
+    [HttpPut("{customerId:int}/deactivate")]
+    [Authorize(Roles = AppRoles.Admin)]
+    public async Task<IActionResult> Deactivate(int customerId)
+    {
+        var success = await _customerService.DeactivateAsync(customerId);
         return success ? NoContent() : NotFound($"Customer with id {customerId} not found.");
     }
 

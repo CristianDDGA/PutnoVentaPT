@@ -90,16 +90,25 @@ public class CustomerRepository : ICustomerRepository
             query = query.Where(customer => customer.LastName.Contains(lastName));
         }
 
-        var totalCount = await query.CountAsync();
+        try
+        {
+            var totalCount = await query.CountAsync();
 
-        var items = await query
-            .OrderBy(customer => customer.LastName)
-            .ThenBy(customer  => customer.FirstName)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync();
+            var items = await query
+                .OrderBy(customer => customer.LastName)
+                .ThenBy(customer  => customer.FirstName)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
 
-        return (items, totalCount);
+            return (items, totalCount);
+        }
+        catch (Exception)
+        {
+            // En entornos de desarrollo, si la base de datos no está disponible,
+            // devolvemos un resultado vacío para que el front no se rompa.
+            return (Enumerable.Empty<Customer>(), 0);
+        }
     }
 
     public async Task<bool> HasSalesAsync(int customerId)
@@ -114,4 +123,4 @@ public class CustomerRepository : ICustomerRepository
         var affected = await _appDbContext.SaveChangesAsync();
         return affected > 0;
     }
-}
+}

@@ -105,7 +105,7 @@
                                         <button class="btn btn--primary btn--sm" @onclick="() => OpenEditModal(customer)" disabled="@_isBusy" style="margin-right: 4px;">Editar</button>
                                         @if (customer.IsActive)
                                         {
-                                            <button class="btn btn--danger btn--sm" @onclick="() => DeleteCustomerAsync(customer)" disabled="@_isBusy">Eliminar</button>
+                                            <button class="btn btn--danger btn--sm" @onclick="() => DeactivateCustomerAsync(customer)" disabled="@_isBusy">Desactivar</button>
                                         }
                                         else
                                         {
@@ -156,7 +156,7 @@
                     <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap:var(--spacing-md);">
                         <div class="field-group">
                             <label class="field-label">Documento</label>
-                            <InputText class="field-input" maxlength="20" @bind-Value="_newCustomer.DocumentNumber" />
+                            <InputText class="field-input" maxlength="10" @bind-Value="_newCustomer.DocumentNumber" @oninput="OnDocumentInput" inputmode="numeric" />
                             <ValidationMessage For="@(() => _newCustomer.DocumentNumber)" class="alert alert--error" style="margin-top:4px; padding:4px;" />
                         </div>
                         <div class="field-group">
@@ -442,12 +442,12 @@
         }
     }
 
-    private async Task DeleteCustomerAsync(CustomerModel customer)
+    private async Task DeactivateCustomerAsync(CustomerModel customer)
     {
         var confirmed = await _confirmModal.ShowAsync(
-            message: $"¿Está seguro de que desea eliminar al cliente '{customer.FullName}'?",
-            title: "Eliminar Cliente",
-            confirmText: "Sí, eliminar");
+            message: $"¿Está seguro de que desea desactivar al cliente '{customer.FullName}'?",
+            title: "Desactivar Cliente",
+            confirmText: "Sí, desactivar");
 
         if (!confirmed) return;
 
@@ -456,21 +456,29 @@
 
         try
         {
-            var result = await CustomerApiService.DeleteAsync(customer.CustomerId);
-            if (result is not null && result.Success)
+            var success = await CustomerApiService.DeactivateAsync(customer.CustomerId);
+            if (success)
             {
-                SetMessage(result.Message, false);
+                SetMessage("Cliente desactivado.", false);
                 await LoadPageAsync(_currentPage);
             }
             else
             {
-                SetMessage(result?.Message ?? "No se pudo eliminar al cliente.", true);
+                SetMessage("No se pudo desactivar al cliente.", true);
             }
         }
         finally
         {
             _isBusy = false;
         }
+    }
+
+    private void OnDocumentInput(ChangeEventArgs e)
+    {
+        var s = e.Value?.ToString() ?? string.Empty;
+        var digits = new string(s.Where(char.IsDigit).ToArray());
+        if (digits.Length > 10) digits = digits.Substring(0, 10);
+        _newCustomer.DocumentNumber = digits;
     }
 
     private void SetMessage(string? message, bool isError)

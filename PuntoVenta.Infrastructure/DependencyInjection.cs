@@ -16,11 +16,26 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        // 1. CAMBIO AQUÍ: Cambiamos UseOracle por UseSqlServer
-        services.AddDbContext<AppDbContext>(dbContextOptions =>
-            dbContextOptions.UseSqlServer(
-                configuration.GetConnectionString("DefaultConnection"),
-                b => b.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName))); // Esto asegura que encuentre las migraciones aquí
+        // Allow running without a SQL Server during local development by
+        // switching to SQLite when SKIP_MIGRATIONS env var is set.
+        var skipMigrationsEnv = System.Environment.GetEnvironmentVariable("SKIP_MIGRATIONS");
+        var useSqliteFallback = !string.IsNullOrEmpty(skipMigrationsEnv) &&
+                                (skipMigrationsEnv.Equals("1") || skipMigrationsEnv.Equals("true", StringComparison.OrdinalIgnoreCase));
+
+        if (useSqliteFallback)
+        {
+            // Lightweight local DB for development when SQL Server isn't available
+            services.AddDbContext<AppDbContext>(dbContextOptions =>
+                dbContextOptions.UseSqlite("Data Source=puntoventa_dev.db"));
+        }
+        else
+        {
+            // Default: use SQL Server from configuration
+            services.AddDbContext<AppDbContext>(dbContextOptions =>
+                dbContextOptions.UseSqlServer(
+                    configuration.GetConnectionString("DefaultConnection"),
+                    b => b.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName))); // Esto asegura que encuentre las migraciones aquí
+        }
 
         // Repositorios (Se quedan exactamente igual)
         services.AddScoped<ICustomerRepository, CustomerRepository>();

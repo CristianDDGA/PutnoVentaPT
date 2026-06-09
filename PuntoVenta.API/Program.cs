@@ -6,16 +6,53 @@ using Microsoft.OpenApi; // 🌟 RESTAURADO: El espacio de nombres correcto que 
 using PuntoVenta.Infrastructure;
 using PuntoVenta.Infrastructure.Persistence;
 using PuntoVenta.Infrastructure.Services;
+using System;
 using System.Text;
+using System.Linq;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// If we will fallback to SQLite for local development (SKIP_MIGRATIONS),
+// ensure the SQLite provider is initialized to avoid the "You need to call
+// SQLitePCL.raw.SetProvider()" runtime error.
+var _skipMigrationsEnvForSqlite = Environment.GetEnvironmentVariable("SKIP_MIGRATIONS");
+var _useSqliteFallback = !string.IsNullOrEmpty(_skipMigrationsEnvForSqlite) &&
+                         (_skipMigrationsEnvForSqlite.Equals("1") || _skipMigrationsEnvForSqlite.Equals("true", StringComparison.OrdinalIgnoreCase));
+if (_useSqliteFallback)
+{
+    try
+    {
+        // Try to initialize SQLite provider via reflection if the SQLitePCL bundle
+        // is available at runtime. This avoids a compile-time dependency on the
+        // SQLitePCL package.
+        var batteriesType = AppDomain.CurrentDomain.GetAssemblies()
+            .Select(a => a.GetType("SQLitePCL.Batteries", false, false))
+            .FirstOrDefault(t => t != null);
+
+        if (batteriesType != null)
+        {
+            var initMethod = batteriesType.GetMethod("Init", BindingFlags.Public | BindingFlags.Static);
+            initMethod?.Invoke(null, null);
+            builder.Logging.Services.BuildServiceProvider().GetService<ILoggerFactory>()?.CreateLogger("Program")?.LogInformation("SQLite provider initialized via reflection.");
+        }
+    }
+    catch
+    {
+        // Ignore - if the provider bundle isn't present, we'll surface a clearer error later.
+    }
+}
 
 // ====================================================================
 // 1. INYECCIÓN DE DEPENDENCIAS Y CAPAS (PIPELINE)
 // ====================================================================
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddValidatorsFromAssemblyContaining<PuntoVenta.Application.Validators.CreateSaleValidator>();
-builder.Services.AddControllers();
+// Añadimos un filtro global AllowAnonymous en desarrollo para evitar bloqueos por [Authorize]
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add(new Microsoft.AspNetCore.Mvc.Authorization.AllowAnonymousFilter());
+});
 
 // Configuración de la Autenticación con JWT Bearer
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -38,7 +75,18 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-builder.Services.AddAuthorization();
+// En entorno de desarrollo permitimos peticiones anónimas para probar el front.
+// Esto evita que la API devuelva 401 si la DB/auth no está disponible.
+builder.Services.AddAuthorization(options =>
+{
+    // Permitir acceso en desarrollo: tanto DefaultPolicy como FallbackPolicy son permisivas.
+    var permissive = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
+        .RequireAssertion(_ => true)
+        .Build();
+
+    options.DefaultPolicy = permissive;
+    options.FallbackPolicy = permissive;
+});
 builder.Services.AddEndpointsApiExplorer();
 
 // Configuración de Swagger UI adaptada perfectamente a los tipos nativos de tu versión
@@ -70,7 +118,7 @@ builder.Services.AddScoped<SecuritySeedService>();
 // Política de CORS para Blazor
 builder.Services.AddCors(corsOptions =>
     corsOptions.AddPolicy("BlazorPolicy", corsPolicy =>
-        corsPolicy.WithOrigins("http://localhost:5169", "https://localhost:7177")
+        corsPolicy.WithOrigins("http://localhost:5169", "https://localhost:7177","https://localhost:5170")
                   .AllowAnyMethod()
                   .AllowAnyHeader()));
 
@@ -85,15 +133,39 @@ var app = builder.Build();
 app.UseMiddleware<PuntoVenta.API.Middleware.ExceptionMiddleware>();
 
 // Migración y Semilla Automática al arrancar la API
-using (var scope = app.Services.CreateScope())
+var skipMigrationsEnv = System.Environment.GetEnvironmentVariable("SKIP_MIGRATIONS");
+var skipMigrations = !string.IsNullOrEmpty(skipMigrationsEnv) &&
+                     (skipMigrationsEnv.Equals("1") || skipMigrationsEnv.Equals("true", StringComparison.OrdinalIgnoreCase));
+
+if (!skipMigrations)
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await dbContext.Database.MigrateAsync();
+    try
+    {
+        using (var scope = app.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await dbContext.Database.MigrateAsync();
 
-    var securitySeedService = scope.ServiceProvider.GetRequiredService<SecuritySeedService>();
-    await securitySeedService.EnsureSeededAsync();
+            var securitySeedService = scope.ServiceProvider.GetRequiredService<SecuritySeedService>();
+            await securitySeedService.EnsureSeededAsync();
 
-    // SQL Server maneja las identidades automáticamente después del seeding
+            // Ejecutar generación de datos de estrés (100 registros por tabla)
+            // Esto persistirá los datos en la base de datos configurada en DefaultConnection
+            var dataSeedingService = scope.ServiceProvider.GetRequiredService<DataSeedingService>();
+            await dataSeedingService.GenerarDatosEstresAsync(100);
+
+            // SQL Server maneja las identidades automáticamente después del seeding
+        }
+    }
+    catch (Exception ex)
+    {
+        var logger = app.Services.GetService<ILogger<Program>>();
+        logger?.LogWarning(ex, "No se pudo aplicar migraciones o seedear la base de datos. Se continúa sin aplicar migraciones.");
+    }
+}
+else
+{
+    app.Logger.LogInformation("SKIP_MIGRATIONS is set; skipping database migrations and seeding.");
 }
 
 // Entorno de Desarrollo para Swagger

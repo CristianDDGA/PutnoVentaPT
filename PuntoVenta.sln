@@ -1,0 +1,46 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.0.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PuntoVenta.API", "PuntoVenta.API\PuntoVenta.API.csproj", "{97b9a53e-4b76-40fa-be0d-586de15625fa}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PuntoVenta.Application", "PuntoVenta.Application\PuntoVenta.Application.csproj", "{01fb824a-b6de-4cb4-bbdd-fd169b3bef18}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PuntoVenta.Blazor", "PuntoVenta.Blazor\PuntoVenta.Blazor.csproj", "{1fdb16d0-b759-4d7c-87a2-7df120514bef}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PuntoVenta.Domain", "PuntoVenta.Domain\PuntoVenta.Domain.csproj", "{99b5e2db-88dd-4e9f-bfc0-d57fe4b7e85f}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PuntoVenta.Infrastructure", "PuntoVenta.Infrastructure\PuntoVenta.Infrastructure.csproj", "{89ab0d18-4c9f-4904-a89c-411ef0b819eb}"
+EndProject
+Global
+    GlobalSection(SolutionConfigurationPlatforms) = preSolution
+        Debug|Any CPU = Debug|Any CPU
+        Release|Any CPU = Release|Any CPU
+    EndGlobalSection
+    GlobalSection(ProjectConfigurationPlatforms) = postSolution
+        {97b9a53e-4b76-40fa-be0d-586de15625fa}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {97b9a53e-4b76-40fa-be0d-586de15625fa}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {97b9a53e-4b76-40fa-be0d-586de15625fa}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {97b9a53e-4b76-40fa-be0d-586de15625fa}.Release|Any CPU.Build.0 = Release|Any CPU
+
+        {01fb824a-b6de-4cb4-bbdd-fd169b3bef18}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {01fb824a-b6de-4cb4-bbdd-fd169b3bef18}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {01fb824a-b6de-4cb4-bbdd-fd169b3bef18}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {01fb824a-b6de-4cb4-bbdd-fd169b3bef18}.Release|Any CPU.Build.0 = Release|Any CPU
+
+        {1fdb16d0-b759-4d7c-87a2-7df120514bef}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {1fdb16d0-b759-4d7c-87a2-7df120514bef}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {1fdb16d0-b759-4d7c-87a2-7df120514bef}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {1fdb16d0-b759-4d7c-87a2-7df120514bef}.Release|Any CPU.Build.0 = Release|Any CPU
+
+        {99b5e2db-88dd-4e9f-bfc0-d57fe4b7e85f}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {99b5e2db-88dd-4e9f-bfc0-d57fe4b7e85f}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {99b5e2db-88dd-4e9f-bfc0-d57fe4b7e85f}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {99b5e2db-88dd-4e9f-bfc0-d57fe4b7e85f}.Release|Any CPU.Build.0 = Release|Any CPU
+
+        {89ab0d18-4c9f-4904-a89c-411ef0b819eb}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {89ab0d18-4c9f-4904-a89c-411ef0b819eb}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {89ab0d18-4c9f-4904-a89c-411ef0b819eb}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {89ab0d18-4c9f-4904-a89c-411ef0b819eb}.Release|Any CPU.Build.0 = Release|Any CPU
+    EndGlobalSection
+EndGlobal

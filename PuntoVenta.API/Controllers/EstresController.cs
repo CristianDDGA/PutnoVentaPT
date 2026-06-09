@@ -22,7 +22,7 @@ public class EstresController : ControllerBase
     {
         try
         {
-            await _seedingService.GenerarDatosEstresAsync();
+            await _seedingService.GenerarDatosEstresAsync(100);
             return Ok("¡Éxito! Se han insertado 100 registros en cada tabla en SQL Server de forma limpia y óptima.");
         }
         catch (Exception ex)

@@ -91,6 +91,16 @@ public class CustomerApiService
         catch { return false; }
     }
 
+    public async Task<bool> DeactivateAsync(int customerId)
+    {
+        try
+        {
+            var response = await _httpClient.PutAsync($"api/Customers/{customerId}/deactivate", null);
+            return response.IsSuccessStatusCode;
+        }
+        catch { return false; }
+    }
+
     public async Task<DeleteResultModel?> DeleteAsync(int customerId)
     {
         try

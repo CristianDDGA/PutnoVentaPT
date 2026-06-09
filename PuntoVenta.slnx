@@ -1,7 +1,0 @@
-<Solution>
-  <Project Path="PuntoVenta.API/PuntoVenta.API.csproj" />
-  <Project Path="PuntoVenta.Application/PuntoVenta.Application.csproj" />
-  <Project Path="PuntoVenta.Blazor/PuntoVenta.Blazor.csproj" />
-  <Project Path="PuntoVenta.Domain/PuntoVenta.Domain.csproj" />
-  <Project Path="PuntoVenta.Infrastructure/PuntoVenta.Infrastructure.csproj" />
-</Solution>

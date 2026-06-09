@@ -18,14 +18,14 @@ public class DataSeedingService
         _context = context;
     }
 
-    public async Task GenerarDatosEstresAsync()
+    public async Task GenerarDatosEstresAsync(int recordCount = 100)
     {
         _context.Database.SetCommandTimeout(300);
 
         var fakerTech = new Faker("en");
         var fakerEs = new Faker("es");
 
-        int recordCount = 100; // El usuario solicitó 100 datos por tabla
+        // recordCount se recibe como parámetro (por defecto 100)
 
         using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -115,7 +115,7 @@ public class DataSeedingService
 
                 // Como la venta es histórica, la confirmamos directamente y ajustamos la fecha
                 sale.ConfirmSale();
-                sale.UpdateDraft(sale.CustomerId, sale.CustomerDocument, sale.CustomerName, sale.PaymentType, saleDetails, null, null); // Esto es solo un hack para el constructor, pero podemos cambiar propiedades internas si EF lo permite, o dejar la fecha por defecto
+                // No llamar a UpdateDraft después de ConfirmSale (provoca excepción). Los detalles ya se asignaron en Create.
                 
                 sales.Add(sale);
             }
