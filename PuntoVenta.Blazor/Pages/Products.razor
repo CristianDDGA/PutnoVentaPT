@@ -34,7 +34,7 @@
                 @if (_isAdmin)
                 {
                     <button class="btn btn--secondary btn--sm" @onclick="OpenCreateModal">
-                        <i class="ph ph-plus"></i> Nuevo Producto
+                        <i class="ph ph-plus"></i> Nuevo Producto <kbd style="margin-left: 6px; font-size: 10px; padding: 2px 4px; background: rgba(0,0,0,0.1); border-radius: 4px; border: 1px solid rgba(0,0,0,0.05);">F2</kbd>
                     </button>
                 }
             </div>
@@ -44,9 +44,9 @@
             <div class="field-group">
                 <label class="field-label" style="display:flex; align-items:center; gap:6px;">
                     Nombre
-                    <span style="font-size:10px; background:rgba(99,102,241,0.15); color:#818cf8; border-radius:999px; padding:1px 8px; font-weight:normal; letter-spacing:0.03em;">Búsqueda en vivo</span>
+                    <span style="font-size:10px; background:rgba(99,102,241,0.15); color:#818cf8; border-radius:999px; padding:1px 8px; font-weight:normal; letter-spacing:0.03em;"><kbd style="background:transparent; border:none; padding:0; margin-right:2px; font-weight:bold;">F9</kbd> Búsqueda en vivo</span>
                 </label>
-                <input class="field-input" @bind="SearchName" @bind:event="oninput" placeholder="Buscar producto..." />
+                <input id="search-input" class="field-input" @bind="SearchName" @bind:event="oninput" placeholder="Buscar producto..." />
             </div>
             <div class="field-group" style="flex-direction:row; align-items:center; gap:var(--spacing-sm);">
                 <input type="checkbox" checked="@_onlyInStock" @onchange="OnOnlyInStockChanged" />
@@ -162,7 +162,7 @@
                     <div class="form-grid form-grid-1">
                         <div class="field-group">
                             <label class="field-label">Nombre</label>
-                            <InputText class="field-input" @bind-Value="_newProduct.Name" />
+                            <InputText id="first-input" class="field-input" @bind-Value="_newProduct.Name" />
                             <ValidationMessage For="@(() => _newProduct.Name)" class="alert alert--error" style="margin-top:4px; padding:4px;" />
                         </div>
                         <div class="field-group">
@@ -269,6 +269,14 @@
         {
             await InvokeAsync(CloseCreateModalWithConfirmAsync);
         }
+        else if (key == "F2" && _isAdmin && !_isCreateModalOpen)
+        {
+            await InvokeAsync(() => { OpenCreateModal(); StateHasChanged(); });
+        }
+        else if (key == "F9" && !_isCreateModalOpen)
+        {
+            await InvokeAsync(() => JSRuntime.InvokeVoidAsync("pvKeyboardBridge.focusElement", "search-input"));
+        }
     }
 
     private async Task ResolveRoleAsync()
@@ -311,6 +319,7 @@
         _newProduct.Name = string.Empty;
         _newProduct.Price = 0;
         _newProduct.Stock = 0;
+        _ = InvokeAsync(() => JSRuntime.InvokeVoidAsync("pvKeyboardBridge.focusElement", "first-input"));
     }
 
     private void OpenEditModal(ProductModel product)
