@@ -1699,3 +1699,13 @@ kbd {
 ::-webkit-scrollbar-thumb:hover {
     background: var(--color-text-muted);
 }
+
+/* Keyboard navigation row highlighting */
+.row-selected {
+    background-color: rgba(99, 102, 241, 0.1) !important;
+    border-left: 3px solid var(--color-primary);
+    transition: all 0.15s ease;
+}
+.row-selected td {
+    color: var(--color-primary-dark);
+}

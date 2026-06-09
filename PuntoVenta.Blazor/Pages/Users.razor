@@ -40,9 +40,14 @@
             </button>
             <div style="position:relative; width: 300px;">
                 <input id="search-input" class="field-input" placeholder="[F9] Buscar usuario..." 
-                       @bind="_searchTerm" @bind:event="oninput" style="padding-left: 36px;" />
+                       @bind="_searchTerm" @bind:event="oninput" @onkeydown="HandleTableKeyDown" style="padding-left: 36px;" />
                 <i class="ph ph-magnifying-glass" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--color-text-secondary); pointer-events:none;"></i>
             </div>
+        </div>
+        <div style="font-size: 11px; color: var(--color-text-secondary); margin-bottom: 12px; display: flex; gap: 12px; flex-wrap: wrap;">
+            <span><kbd style="background: var(--color-bg-elevated); padding: 2px 4px; border-radius: 4px; border: 1px solid var(--color-border); font-family: monospace;">↓↑</kbd> Seleccionar fila</span>
+            <span><kbd style="background: var(--color-bg-elevated); padding: 2px 4px; border-radius: 4px; border: 1px solid var(--color-border); font-family: monospace;">Enter</kbd> Editar</span>
+            <span><kbd style="background: var(--color-bg-elevated); padding: 2px 4px; border-radius: 4px; border: 1px solid var(--color-border); font-family: monospace;">Supr</kbd> Desactivar</span>
         </div>
 
         @if (_isLoading)
@@ -66,9 +71,11 @@
                         </tr>
                     </thead>
                     <tbody>
+                        @{ int index = 0; }
                         @foreach (var user in FilteredUsers)
                         {
-                            <tr>
+                            var currentIndex = index++;
+                            <tr class="@(_selectedIndex == currentIndex ? "row-selected" : "")">
                                 <td class="font-mono">@user.Username</td>
                                 <td>@user.FullName</td>
                                 <td>@user.Email</td>
@@ -185,7 +192,7 @@
                     <div class="modal-footer">
                         <button type="button" class="btn btn--ghost" @onclick="CloseModalWithConfirmAsync">Cancelar</button>
                         <button type="submit" class="btn btn--primary" disabled="@_isSaving">
-                            @if (_isSaving) { <text><i class="ph ph-hourglass-high"></i> Guardando...</text> } else { <text><i class="ph ph-floppy-disk"></i> Guardar Cambios</text> }
+                            @if (_isSaving) { <text><i class="ph ph-hourglass-high"></i> Guardando...</text> } else { <text><i class="ph ph-floppy-disk"></i> Guardar Cambios <kbd style="margin-left: 6px; font-size: 10px; padding: 2px 4px; background: rgba(0,0,0,0.1); border-radius: 4px; border: 1px solid rgba(0,0,0,0.05);">Ctrl+Enter</kbd></text> }
                         </button>
                     </div>
                 </EditForm>
@@ -262,6 +269,7 @@
     private List<UserModel> _users = [];
     private List<RoleModel> _roles = [];
     private bool _isLoading = true;
+    private int _selectedIndex = -1;
     
     private bool _isModalOpen = false;
     private bool _isEditing = false;
@@ -316,11 +324,44 @@
         {
             await InvokeAsync(() => JSRuntime.InvokeVoidAsync("pvKeyboardBridge.focusElement", "search-input"));
         }
+        else if (key == "Delete" && !_isModalOpen && _selectedIndex >= 0)
+        {
+            var items = FilteredUsers.ToList();
+            if (_selectedIndex < items.Count)
+            {
+                await InvokeAsync(() => DeactivateUser(items[_selectedIndex].UserId));
+            }
+        }
+        else if (key == "CtrlEnter" && _isModalOpen)
+        {
+            if (_isEditing) await InvokeAsync(HandleUpdateUser);
+            else await InvokeAsync(HandleCreateUser);
+        }
+    }
+
+    private void HandleTableKeyDown(KeyboardEventArgs e)
+    {
+        var items = FilteredUsers.ToList();
+        if (!items.Any()) return;
+
+        if (e.Key == "ArrowDown")
+        {
+            _selectedIndex = Math.Min(_selectedIndex + 1, items.Count - 1);
+        }
+        else if (e.Key == "ArrowUp")
+        {
+            _selectedIndex = Math.Max(_selectedIndex - 1, 0);
+        }
+        else if (e.Key == "Enter" && _selectedIndex >= 0)
+        {
+            OpenEditModal(items[_selectedIndex]);
+        }
     }
 
     private async Task LoadDataAsync()
     {
         _isLoading = true;
+        _selectedIndex = -1;
         _users = await UserApiService.GetAllAsync();
         _roles = await UserApiService.GetRolesAsync();
         _isLoading = false;

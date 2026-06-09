@@ -106,9 +106,25 @@
                 return;
             }
 
+            // Alt + left/right
+            if (e.altKey && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) {
+                e.preventDefault();
+                window.pvKeyboardBridge.dotNetHelper.invokeMethodAsync('OnGlobalShortcut', e.altKey ? "Alt" + e.key : e.key);
+                window.pvKeyboardBridge.triggerSound('click');
+                return;
+            }
+
+            // Ctrl + Enter
+            if (e.ctrlKey && e.key === 'Enter') {
+                // Not preventing default to allow buttons to trigger if focused, but intercepting it globally
+                window.pvKeyboardBridge.dotNetHelper.invokeMethodAsync('OnGlobalShortcut', 'CtrlEnter');
+                window.pvKeyboardBridge.triggerSound('click');
+                return;
+            }
+
             const activeModal = document.querySelector('.modal-overlay');
 
-            const handledKeys = ['F2', 'F4', 'F6', 'F8', 'F9', 'Escape'];
+            const handledKeys = ['F2', 'F4', 'F6', 'F8', 'F9', 'Escape', 'Delete'];
             const modalNavKeys = ['ArrowUp', 'ArrowDown', 'Enter'];
 
             if (handledKeys.includes(e.key)) {
