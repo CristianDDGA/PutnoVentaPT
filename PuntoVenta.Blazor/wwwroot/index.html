@@ -29,10 +29,10 @@
             remove: (key) => localStorage.removeItem(key)
         };
 
-        // Download PDF from a base-64 string
-        window.downloadPdf = (base64, fileName) => {
+        // Download a file from a base-64 string
+        window.downloadFile = (base64, fileName, mimeType) => {
             const bytes    = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
-            const blob     = new Blob([bytes], { type: 'application/pdf' });
+            const blob     = new Blob([bytes], { type: mimeType });
             const url      = URL.createObjectURL(blob);
             const link     = document.createElement('a');
             link.href      = url;
@@ -40,6 +40,9 @@
             link.click();
             URL.revokeObjectURL(url);
         };
+
+        window.downloadPdf = (base64, fileName) =>
+            window.downloadFile(base64, fileName, 'application/pdf');
 
         // Show a native confirmation dialog and return the boolean result
         window.confirmDialog = (message) => confirm(message);

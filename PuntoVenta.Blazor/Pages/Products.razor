@@ -7,6 +7,7 @@
 @inject ProductApiService ProductApiService
 @inject AuthenticationStateProvider AuthStateProvider
 @inject UserModeService UserModeService
+@inject IJSRuntime JSRuntime
 
 <PageTitle>Productos — Punto de Venta</PageTitle>
 
@@ -19,12 +20,24 @@
     <div class="card">
         <div class="card-header">
             <span class="card-title">Filtros</span>
-            @if (_isAdmin)
-            {
-                <button class="btn btn--secondary btn--sm ml-auto" @onclick="OpenCreateModal">
-                    <i class="ph ph-plus"></i> Nuevo Producto
+            <div style="display:flex; gap:var(--spacing-sm); margin-left:auto;">
+                <button class="btn btn--secondary btn--sm" @onclick="ExportExcelAsync" disabled="@_isExporting">
+                    @if (_isExporting)
+                    {
+                        <span><i class="ph ph-spinner ph-spin"></i> Exportando...</span>
+                    }
+                    else
+                    {
+                        <span><i class="ph ph-file-xls"></i> Exportar Excel</span>
+                    }
                 </button>
-            }
+                @if (_isAdmin)
+                {
+                    <button class="btn btn--secondary btn--sm" @onclick="OpenCreateModal">
+                        <i class="ph ph-plus"></i> Nuevo Producto
+                    </button>
+                }
+            </div>
         </div>
 
         <div style="display:grid; grid-template-columns: 1fr auto; gap:var(--spacing-md); align-items:flex-end;">
@@ -191,6 +204,7 @@
     private string _searchName = string.Empty;
     private bool _onlyInStock;
     private bool _isLoading;
+    private bool _isExporting;
     private bool _isBusy;
     private bool _isAdmin;
     private string? _message;
@@ -427,5 +441,30 @@
     {
         _message = message;
         _isError = isError;
+    }
+
+    private async Task ExportExcelAsync()
+    {
+        _isExporting = true;
+        try
+        {
+            var excelBytes = await ProductApiService.GetExcelExportAsync(
+                name:        string.IsNullOrWhiteSpace(_searchName) ? null : _searchName.Trim(),
+                onlyInStock: _onlyInStock);
+
+            if (excelBytes is null) return;
+
+            var base64   = Convert.ToBase64String(excelBytes);
+            var fileName = $"Productos_{DateTime.Now:yyyyMMdd_HHmm}.xlsx";
+            await JSRuntime.InvokeVoidAsync(
+                "downloadFile",
+                base64,
+                fileName,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        }
+        finally
+        {
+            _isExporting = false;
+        }
     }
 }

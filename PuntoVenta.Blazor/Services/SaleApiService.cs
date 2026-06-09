@@ -95,6 +95,25 @@ public class SaleApiService
 
     private class ErrorResponse { public string Message { get; set; } = string.Empty; }
 
+    public async Task<byte[]?> GetExcelExportAsync(
+        int?    saleId       = null,
+        string? customerName = null,
+        bool    excludeVoided = false)
+    {
+        try
+        {
+            var url = BuildPagedUrl("api/Sales/export/excel", page: 1, pageSize: 1,
+                saleId.HasValue ? $"saleId={saleId}" : null,
+                !string.IsNullOrWhiteSpace(customerName) ? $"customerName={Uri.EscapeDataString(customerName)}" : null,
+                excludeVoided ? "excludeVoided=true" : null);
+
+            var httpResponse = await _httpClient.GetAsync(url);
+            if (!httpResponse.IsSuccessStatusCode) return null;
+            return await httpResponse.Content.ReadAsByteArrayAsync();
+        }
+        catch { return null; }
+    }
+
     public async Task<byte[]?> GetPdfAsync(int saleId)
     {
         try

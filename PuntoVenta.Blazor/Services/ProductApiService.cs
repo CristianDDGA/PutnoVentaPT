@@ -22,6 +22,25 @@ public class ProductApiService
         catch { return []; }
     }
 
+    public async Task<byte[]?> GetExcelExportAsync(
+        string? name        = null,
+        bool    onlyInStock = false,
+        bool    onlyActive  = false)
+    {
+        try
+        {
+            var url = BuildPagedUrl("api/Products/export/excel", page: 1, pageSize: 1,
+                !string.IsNullOrWhiteSpace(name) ? $"name={Uri.EscapeDataString(name)}" : null,
+                onlyInStock ? "onlyInStock=true" : null,
+                onlyActive ? "onlyActive=true" : null);
+
+            var httpResponse = await _httpClient.GetAsync(url);
+            if (!httpResponse.IsSuccessStatusCode) return null;
+            return await httpResponse.Content.ReadAsByteArrayAsync();
+        }
+        catch { return null; }
+    }
+
     public async Task<ProductModel?> GetByIdAsync(int productId)
     {
         try

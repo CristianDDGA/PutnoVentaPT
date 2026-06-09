@@ -58,6 +58,7 @@ public static class DependencyInjection
 
         // Servicios de Infrastructure (Se quedan exactamente igual)
         services.AddScoped<IPdfService, PdfService>();
+        services.AddScoped<IExcelExportService, ExcelExportService>();
         services.AddScoped<IDashboardService, DashboardService>();
         services.AddScoped<SecuritySeedService>();
 

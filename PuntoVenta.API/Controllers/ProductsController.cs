@@ -12,14 +12,17 @@ namespace PuntoVenta.API.Controllers;
 [Authorize(Roles = $"{AppRoles.Admin},{AppRoles.Seller}")]
 public class ProductsController : ControllerBase
 {
-    private readonly IProductService             _productService;
+    private readonly IProductService              _productService;
+    private readonly IExcelExportService          _excelExportService;
     private readonly IValidator<CreateProductDto> _createProductValidator;
 
     public ProductsController(
         IProductService              productService,
+        IExcelExportService          excelExportService,
         IValidator<CreateProductDto> createProductValidator)
     {
         _productService         = productService;
+        _excelExportService     = excelExportService;
         _createProductValidator = createProductValidator;
     }
 
@@ -55,6 +58,24 @@ public class ProductsController : ControllerBase
 
         var pagedResult = await _productService.SearchPagedAsync(productId, name, page, pageSize, onlyInStock, onlyActive);
         return Ok(pagedResult);
+    }
+
+    [HttpGet("export/excel")]
+    public async Task<IActionResult> ExportExcel(
+        [FromQuery] string? name        = null,
+        [FromQuery] bool    onlyInStock = false,
+        [FromQuery] bool    onlyActive  = false)
+    {
+        var pagedResult = await _productService.SearchPagedAsync(
+            productId: null, name, page: 1, pageSize: 10_000, onlyInStock, onlyActive);
+
+        var excelBytes = _excelExportService.ExportProducts(pagedResult.Items);
+        var fileName   = $"Productos_{DateTime.UtcNow:yyyyMMdd_HHmm}.xlsx";
+
+        return File(
+            excelBytes,
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            fileName);
     }
 
     [HttpGet("{productId:int}")]

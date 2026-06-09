@@ -15,15 +15,18 @@ public class SalesController : ControllerBase
 {
     private readonly ISaleService             _saleService;
     private readonly IPdfService              _pdfService;
+    private readonly IExcelExportService      _excelExportService;
     private readonly IValidator<CreateSaleDto> _createSaleValidator;
 
     public SalesController(
         ISaleService              saleService,
         IPdfService               pdfService,
+        IExcelExportService       excelExportService,
         IValidator<CreateSaleDto> createSaleValidator)
     {
         _saleService         = saleService;
         _pdfService          = pdfService;
+        _excelExportService  = excelExportService;
         _createSaleValidator = createSaleValidator;
     }
 
@@ -119,6 +122,28 @@ public class SalesController : ControllerBase
         {
             return BadRequest(new { Message = ex.Message });
         }
+    }
+
+    [HttpGet("export/excel")]
+    public async Task<IActionResult> ExportExcel(
+        [FromQuery] int?    saleId       = null,
+        [FromQuery] string? customerName = null,
+        [FromQuery] bool    excludeVoided = false)
+    {
+        int? sellerId = null;
+        if (User.IsInRole(AppRoles.Seller))
+            sellerId = GetCurrentUserId();
+
+        var pagedResult = await _saleService.SearchPagedAsync(
+            saleId, customerName, page: 1, pageSize: 10_000, excludeVoided, sellerId);
+
+        var excelBytes = _excelExportService.ExportSales(pagedResult.Items);
+        var fileName   = $"Ventas_{DateTime.UtcNow:yyyyMMdd_HHmm}.xlsx";
+
+        return File(
+            excelBytes,
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            fileName);
     }
 
     [HttpGet("{saleId:int}/pdf")]
