@@ -758,6 +758,15 @@ html, body {
     vertical-align: middle;
 }
 
+/* Actions inside table rows */
+.table-actions {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    flex-wrap: nowrap;
+}
+
 .data-table td.align-right {
     text-align: right;
     font-variant-numeric: tabular-nums;

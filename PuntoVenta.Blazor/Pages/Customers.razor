@@ -111,15 +111,17 @@
                                 @if (_isAdmin)
                                 {
                                     <td class="align-center">
-                                        <button class="btn btn--primary btn--sm" @onclick="() => OpenEditModal(customer)" disabled="@_isBusy" style="margin-right: 4px;">Editar</button>
-                                        @if (customer.IsActive)
-                                        {
-                                            <button class="btn btn--danger btn--sm" @onclick="() => DeactivateCustomerAsync(customer)" disabled="@_isBusy">Desactivar</button>
-                                        }
-                                        else
-                                        {
-                                            <button class="btn btn--success btn--sm" @onclick="() => ActivateAsync(customer.CustomerId)" disabled="@_isBusy">Activar</button>
-                                        }
+                                        <div class="table-actions">
+                                            <button class="btn btn--primary btn--sm" @onclick="() => OpenEditModal(customer)" disabled="@_isBusy">Editar</button>
+                                            @if (customer.IsActive)
+                                            {
+                                                <button class="btn btn--danger btn--sm" @onclick="() => DeactivateCustomerAsync(customer)" disabled="@_isBusy">Desactivar</button>
+                                            }
+                                            else
+                                            {
+                                                <button class="btn btn--success btn--sm" @onclick="() => ActivateAsync(customer.CustomerId)" disabled="@_isBusy">Activar</button>
+                                            }
+                                        </div>
                                     </td>
                                 }
                             </tr>
